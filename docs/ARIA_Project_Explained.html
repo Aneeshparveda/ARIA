@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARIA v4.0 — Project Documentation</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0b0c0f;
+    --surface:   #12141a;
+    --surface2:  #1a1d26;
+    --border:    #2a2d3a;
+    --fire:      #ff6b1a;
+    --ember:     #ff9944;
+    --gold:      #f0c040;
+    --green:     #3ddc84;
+    --cyan:      #4fc3f7;
+    --red:       #ff3d5a;
+    --yellow:    #ffd740;
+    --text:      #e8e4dc;
+    --muted:     #7a7d8a;
+    --dim:       #3a3d4a;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Crimson Pro', Georgia, serif;
+    font-size: 18px;
+    line-height: 1.75;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE TEXTURE OVERLAY ─────────────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  /* ── HERO ──────────────────────────────────────────────────── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 8vw 10vw;
+    position: relative;
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    top: -20%; right: -10%;
+    width: 60vw; height: 100vh;
+    background: radial-gradient(ellipse at center, rgba(255,107,26,0.08) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .hero-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--fire);
+    margin-bottom: 1.6rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .hero-eyebrow::before {
+    content: '';
+    display: block;
+    width: 2rem;
+    height: 1px;
+    background: var(--fire);
+  }
+
+  .hero h1 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: clamp(3.5rem, 9vw, 8rem);
+    font-weight: 700;
+    line-height: 0.95;
+    letter-spacing: -0.01em;
+    margin-bottom: 1.2rem;
+  }
+
+  .hero h1 span.accent { color: var(--fire); }
+  .hero h1 span.dim    { color: var(--dim); }
+
+  .hero-sub {
+    font-size: 1.25rem;
+    font-style: italic;
+    color: var(--muted);
+    max-width: 540px;
+    margin-bottom: 3rem;
+    font-weight: 300;
+  }
+
+  .hero-meta {
+    display: flex;
+    gap: 2.5rem;
+    flex-wrap: wrap;
+  }
+
+  .meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .meta-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .meta-value {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--ember);
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: rgba(61,220,132,0.07);
+    border: 1px solid rgba(61,220,132,0.25);
+    color: var(--green);
+    padding: 0.45rem 1rem;
+    border-radius: 2px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 2.5rem;
+  }
+
+  .status-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  /* ── NAV ───────────────────────────────────────────────────── */
+  .side-nav {
+    position: fixed;
+    right: 2.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    z-index: 100;
+  }
+
+  .nav-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--dim);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    text-decoration: none;
+    display: block;
+  }
+
+  .nav-dot:hover { background: var(--fire); transform: scale(1.4); }
+
+  /* ── LAYOUT ────────────────────────────────────────────────── */
+  main { max-width: 860px; margin: 0 auto; padding: 0 2rem; }
+
+  section {
+    padding: 6rem 0 4rem;
+    border-bottom: 1px solid var(--border);
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  section.visible { opacity: 1; transform: none; }
+
+  /* ── SECTION HEADINGS ──────────────────────────────────────── */
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--fire);
+    margin-bottom: 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .section-label span { color: var(--dim); }
+
+  h2 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 2rem;
+    letter-spacing: -0.01em;
+  }
+
+  h3 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--ember);
+    margin: 2.5rem 0 1rem;
+  }
+
+  p { margin-bottom: 1.4rem; color: #c8c4bc; }
+
+  p strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* ── ARCHITECTURE DIAGRAM ──────────────────────────────────── */
+  .arch-diagram {
+    margin: 3rem 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .arch-diagram::before {
+    content: 'SYSTEM ARCHITECTURE';
+    position: absolute;
+    top: 1rem; right: 1.2rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.18em;
+    color: var(--dim);
+  }
+
+  .arch-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    flex-wrap: wrap;
+  }
+
+  .arch-node {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1.2rem 1.5rem;
+    text-align: center;
+    min-width: 130px;
+    position: relative;
+  }
+
+  .arch-node.transmitter { border-color: var(--fire); }
+  .arch-node.receiver    { border-color: var(--cyan); }
+  .arch-node.cloud       { border-color: var(--gold); }
+
+  .arch-node-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .arch-node.transmitter .arch-node-title { color: var(--fire); }
+  .arch-node.receiver    .arch-node-title { color: var(--cyan); }
+  .arch-node.cloud       .arch-node-title { color: var(--gold); }
+
+  .arch-node-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .arch-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0 1rem;
+  }
+
+  .arch-arrow-line {
+    width: 40px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--dim), var(--muted));
+    position: relative;
+  }
+
+  .arch-arrow-line::after {
+    content: '▶';
+    position: absolute;
+    right: -6px;
+    top: -7px;
+    font-size: 0.6rem;
+    color: var(--muted);
+  }
+
+  .arch-arrow-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.55rem;
+    color: var(--dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* ── THREAT LEVELS ─────────────────────────────────────────── */
+  .threat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.2rem;
+    margin: 2rem 0;
+  }
+
+  .threat-card {
+    border-radius: 3px;
+    padding: 1.5rem;
+    border: 1px solid;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .threat-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, currentColor 0%, transparent 100%);
+    opacity: 0.04;
+  }
+
+  .threat-card.normal   { border-color: rgba(61,220,132,0.35);  background: rgba(61,220,132,0.04); }
+  .threat-card.caution  { border-color: rgba(255,215,64,0.35);  background: rgba(255,215,64,0.04); }
+  .threat-card.emergency{ border-color: rgba(255,61,90,0.35);   background: rgba(255,61,90,0.04); }
+
+  .threat-level-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+
+  .threat-card.normal    .threat-level-label { color: var(--green); }
+  .threat-card.caution   .threat-level-label { color: var(--yellow); }
+  .threat-card.emergency .threat-level-label { color: var(--red); }
+
+  .threat-card h4 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.8rem;
+  }
+
+  .threat-card p {
+    font-size: 0.88rem;
+    line-height: 1.55;
+    margin: 0;
+    color: var(--muted);
+  }
+
+  /* ── SENSOR CARDS ──────────────────────────────────────────── */
+  .sensor-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.2rem;
+    margin: 2rem 0;
+  }
+
+  .sensor-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1.5rem;
+    display: flex;
+    gap: 1.2rem;
+    align-items: flex-start;
+    transition: border-color 0.2s;
+  }
+
+  .sensor-card:hover { border-color: var(--fire); }
+
+  .sensor-icon {
+    font-size: 1.8rem;
+    flex-shrink: 0;
+    width: 2.5rem;
+    text-align: center;
+    line-height: 1;
+  }
+
+  .sensor-info h4 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--ember);
+    margin-bottom: 0.4rem;
+  }
+
+  .sensor-info p {
+    font-size: 0.88rem;
+    line-height: 1.5;
+    margin: 0;
+    color: var(--muted);
+  }
+
+  /* ── LIFI PROTOCOL ─────────────────────────────────────────── */
+  .lifi-timeline {
+    margin: 2rem 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 2rem;
+    overflow-x: auto;
+  }
+
+  .lifi-timeline-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+  }
+
+  .lifi-bar {
+    display: flex;
+    align-items: stretch;
+    height: 48px;
+    gap: 2px;
+    margin-bottom: 0.8rem;
+    min-width: 500px;
+  }
+
+  .lifi-seg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    border-radius: 2px;
+    font-weight: 400;
+  }
+
+  .lifi-seg.start {
+    background: rgba(255,107,26,0.25);
+    border: 1px solid var(--fire);
+    color: var(--fire);
+    flex: 2;
+  }
+
+  .lifi-seg.bit-high {
+    background: rgba(79,195,247,0.2);
+    border: 1px solid var(--cyan);
+    color: var(--cyan);
+    flex: 1;
+  }
+
+  .lifi-seg.bit-low {
+    background: rgba(42,45,58,0.6);
+    border: 1px solid var(--dim);
+    color: var(--muted);
+    flex: 1;
+  }
+
+  .lifi-timing {
+    display: flex;
+    min-width: 500px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--dim);
+  }
+
+  .lifi-timing span { flex: 1; text-align: center; }
+
+  /* ── CODE TABLE ────────────────────────────────────────────── */
+  .code-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.9rem;
+  }
+
+  .code-table th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    background: var(--surface);
+  }
+
+  .code-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(42,45,58,0.6);
+    color: #c8c4bc;
+    vertical-align: top;
+  }
+
+  .code-table tr:hover td { background: rgba(255,107,26,0.03); }
+
+  .mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--ember);
+    background: rgba(255,153,68,0.08);
+    padding: 0.15rem 0.4rem;
+    border-radius: 2px;
+  }
+
+  /* ── CALLOUT BOXES ─────────────────────────────────────────── */
+  .callout {
+    border-left: 2px solid;
+    padding: 1.2rem 1.5rem;
+    margin: 2rem 0;
+    border-radius: 0 3px 3px 0;
+  }
+
+  .callout.info    { border-color: var(--cyan);  background: rgba(79,195,247,0.05); }
+  .callout.warning { border-color: var(--yellow); background: rgba(255,215,64,0.05); }
+  .callout.fire    { border-color: var(--fire);   background: rgba(255,107,26,0.05); }
+
+  .callout-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+
+  .callout.info    .callout-title { color: var(--cyan); }
+  .callout.warning .callout-title { color: var(--yellow); }
+  .callout.fire    .callout-title { color: var(--fire); }
+
+  .callout p { margin: 0; font-size: 0.93rem; color: var(--muted); }
+
+  /* ── SIGNAL CHAIN ──────────────────────────────────────────── */
+  .signal-chain {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 2rem 0;
+  }
+
+  .chain-step {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    padding: 1.2rem 0;
+    border-left: 1px solid var(--border);
+    padding-left: 1.5rem;
+    position: relative;
+  }
+
+  .chain-step::before {
+    content: '';
+    position: absolute;
+    left: -5px; top: 1.6rem;
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--fire);
+  }
+
+  .chain-step:last-child { border-left-color: transparent; }
+
+  .chain-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--fire);
+    flex-shrink: 0;
+    padding-top: 0.2rem;
+    letter-spacing: 0.08em;
+  }
+
+  .chain-content h4 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+    color: var(--text);
+  }
+
+  .chain-content p {
+    font-size: 0.88rem;
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+  /* ── COMPONENTS GRID ───────────────────────────────────────── */
+  .component-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin: 2rem 0;
+  }
+
+  .component-item {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem 1.2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+
+  .component-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    color: var(--fire);
+    background: rgba(255,107,26,0.08);
+    border: 1px solid rgba(255,107,26,0.2);
+    padding: 0.2rem 0.5rem;
+    border-radius: 2px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .component-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .component-sub {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── TELEGRAM SECTION ──────────────────────────────────────── */
+  .tg-message {
+    background: #1a2332;
+    border: 1px solid #2a3f5f;
+    border-radius: 6px;
+    padding: 1.2rem 1.5rem;
+    margin: 1.2rem 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.7;
+    color: #c8d8e8;
+    position: relative;
+  }
+
+  .tg-message::before {
+    content: 'TELEGRAM BOT MESSAGE';
+    position: absolute;
+    top: -0.55rem; left: 1rem;
+    background: #1a2332;
+    padding: 0 0.5rem;
+    font-size: 0.55rem;
+    letter-spacing: 0.15em;
+    color: #4a9eff;
+    text-transform: uppercase;
+  }
+
+  .tg-message .tg-bold { color: #ffffff; font-weight: 400; }
+  .tg-message .tg-val  { color: var(--ember); }
+
+  /* ── FOOTER ────────────────────────────────────────────────── */
+  footer {
+    padding: 4rem 2rem;
+    max-width: 860px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .footer-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--muted);
+  }
+
+  .footer-title span { color: var(--fire); }
+
+  .footer-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--dim);
+    letter-spacing: 0.1em;
+    text-align: right;
+  }
+
+  /* ── DIVIDER ───────────────────────────────────────────────── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, var(--fire), transparent);
+    margin: 0.5rem 0 2.5rem;
+    opacity: 0.4;
+  }
+
+  /* ── RESPONSIVE ────────────────────────────────────────────── */
+  @media (max-width: 640px) {
+    .hero { padding: 5rem 1.5rem; }
+    main  { padding: 0 1.2rem; }
+    .threat-grid   { grid-template-columns: 1fr; }
+    .sensor-grid   { grid-template-columns: 1fr; }
+    .component-grid { grid-template-columns: 1fr; }
+    .arch-flow     { flex-direction: column; align-items: center; }
+    .arch-arrow    { transform: rotate(90deg); }
+    .side-nav      { display: none; }
+  }
+
+  /* ── SCROLL ANIMATION ──────────────────────────────────────── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Side Navigation Dots -->
+<nav class="side-nav" aria-label="Page sections">
+  <a class="nav-dot" href="#overview"    title="Overview"></a>
+  <a class="nav-dot" href="#hardware"    title="Hardware"></a>
+  <a class="nav-dot" href="#sensing"     title="Sensing"></a>
+  <a class="nav-dot" href="#lifi"        title="Li-Fi"></a>
+  <a class="nav-dot" href="#threat"      title="Threat Logic"></a>
+  <a class="nav-dot" href="#receiver"    title="Receiver"></a>
+  <a class="nav-dot" href="#alerts"      title="Alerts"></a>
+  <a class="nav-dot" href="#dashboard"   title="Dashboard"></a>
+  <a class="nav-dot" href="#memory"      title="Reliability"></a>
+</nav>
+
+<!-- ═══════════════════════ HERO ═══════════════════════════════ -->
+<header class="hero">
+  <div class="hero-eyebrow">Autonomous Risk Identification &amp; Alert System</div>
+  <h1>
+    <span class="dim">A</span><span class="accent">RI</span><span class="dim">A</span><br>
+    <span style="font-size:0.55em; color:var(--muted); font-weight:400; letter-spacing:0.04em;">v4.0 — System Documentation</span>
+  </h1>
+  <p class="hero-sub">A real-time fire and hazardous gas detection network built on ESP32 and Arduino, communicating wirelessly via laser light and delivering instant alerts to your phone.</p>
+  <div class="status-badge">System Online — All Sensors Normal</div>
+  <div class="hero-meta">
+    <div class="meta-item">
+      <span class="meta-label">Author</span>
+      <span class="meta-value">Aneesh</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Version</span>
+      <span class="meta-value">4.0.7</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Platform</span>
+      <span class="meta-value">ESP32 + Arduino Uno</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Communication</span>
+      <span class="meta-value">Li-Fi Laser Protocol</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Alert Channel</span>
+      <span class="meta-value">Telegram Bot</span>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════ MAIN CONTENT ══════════════════════ -->
+<main>
+
+  <!-- ── 1. OVERVIEW ──────────────────────────────────────────── -->
+  <section id="overview">
+    <div class="section-label"><span>01 —</span> Project Overview</div>
+    <h2>What is ARIA?</h2>
+    <div class="divider"></div>
+
+    <p>ARIA is a <strong>two-unit wireless safety system</strong> designed to detect fires, hazardous gas leaks, and dangerous temperature conditions in a room, then respond automatically — sounding alarms, activating a ventilation fan, playing voice alerts, and sending instant messages to a phone via Telegram.</p>
+
+    <p>The system is split into a <strong>Transmitter</strong> (the brain, built on an ESP32 microcontroller) and a <strong>Receiver</strong> (the actuator, built on an Arduino Uno). These two units communicate with each other using a custom wireless protocol that transmits data using a <strong>laser beam and a light sensor</strong> — a technology known as Li-Fi.</p>
+
+    <p>Rather than relying on a single sensor that could give false alarms, ARIA uses <strong>four independent sensing channels simultaneously</strong> and combines their readings into a confidence score. The more sensors that agree there is a problem, the more certain the system is — and the more urgently it responds.</p>
+
+    <div class="arch-diagram">
+      <div class="arch-flow">
+        <div class="arch-node transmitter">
+          <div class="arch-node-title">TRANSMITTER</div>
+          <div class="arch-node-sub">ESP32<br>Brain / Sensor Hub</div>
+        </div>
+        <div class="arch-arrow">
+          <div class="arch-arrow-line"></div>
+          <div class="arch-arrow-label">Laser / Li-Fi</div>
+        </div>
+        <div class="arch-node receiver">
+          <div class="arch-node-title">RECEIVER</div>
+          <div class="arch-node-sub">Arduino Uno<br>Actuator Unit</div>
+        </div>
+        <div class="arch-arrow">
+          <div class="arch-arrow-line"></div>
+          <div class="arch-arrow-label">WiFi / Internet</div>
+        </div>
+        <div class="arch-node cloud">
+          <div class="arch-node-title">ALERTS</div>
+          <div class="arch-node-sub">Telegram Bot<br>+ Web Dashboard</div>
+        </div>
+      </div>
+    </div>
+
+    <p>The Transmitter is always connected to the internet and hosts a live web dashboard. It monitors the environment continuously, classifies the threat level, and communicates that classification to both the Receiver (via laser) and the user (via Telegram). The Receiver acts purely on what the laser tells it — activating a fan relay, playing pre-recorded audio alerts, and displaying status on its own output indicators.</p>
+
+    <div class="callout fire">
+      <div class="callout-title">Why two separate units?</div>
+      <p>Having a separate actuator unit (the Receiver) means the fan and audio alerts can be placed in a different physical location — for example, the Transmitter sits in the living room monitoring the air, while the Receiver sits near a window to control the exhaust fan. The laser link also means the actuator doesn't need WiFi of its own.</p>
+    </div>
+  </section>
+
+  <!-- ── 2. HARDWARE ──────────────────────────────────────────── -->
+  <section id="hardware">
+    <div class="section-label"><span>02 —</span> Hardware Architecture</div>
+    <h2>The Physical System</h2>
+    <div class="divider"></div>
+
+    <p>ARIA is assembled from two microcontroller boards, each with its own set of peripherals. Together they cover sensing, communication, output signalling, audio, and remote alerting.</p>
+
+    <h3>Transmitter Unit — ESP32</h3>
+    <p>The ESP32 is a powerful dual-core microcontroller with built-in WiFi. It runs the intelligence of the system — reading sensors, analysing data, hosting the web server, and sending Telegram messages. It also drives the laser that communicates with the Receiver.</p>
+
+    <div class="component-grid">
+      <div class="component-item">
+        <div>
+          <div class="component-name">DHT22 Sensor</div>
+          <div class="component-sub">Temperature &amp; Humidity</div>
+        </div>
+        <div class="component-tag">SENSING</div>
+      </div>
+      <div class="component-item">
+        <div>
+          <div class="component-name">MQ-135 Gas Sensor</div>
+          <div class="component-sub">Air Quality / CO₂ / VOC</div>
+        </div>
+        <div class="component-tag">SENSING</div>
+      </div>
+      <div class="component-item">
+        <div>
+          <div class="component-name">MQ-2 Gas Sensor</div>
+          <div class="component-sub">Smoke / LPG / Methane</div>
+        </div>
+        <div class="component-tag">SENSING</div>
+      </div>
+      <div class="component-item">
+        <div>
+          <div class="component-name">Flame Sensor (IR)</div>
+          <div class="component-sub">Infrared flame detection</div>
+        </div>
+        <div class="component-tag">SENSING</div>
+      </div>
+      <div class="component-item">
+        <div>
+          <div class="component-name">Laser Module</div>
+          <div class="component-sub">Li-Fi data transmitter</div>
+        </div>
+        <div class="component-tag">COMMS</div>
+      </div>
+      <div class="component-item">
+        <div>
+          <div class="component-name">16×2 LCD (I²C)</div>
+          <div class="component-sub">Local status display</div>
+        </div>
+        <div class="component-tag">OUTPUT</div>
+      </div>
+      <div class="component-item">
+        <div>
+          <div class="component-name">RGB LED set (×3)</div>
+          <div class="component-sub">Green / Yellow / Red status</div>
+        </div>
+        <div class="component-tag">OUTPUT</div>
+      </div>
+      <div class="component-item">
+        <div>
+          <div class="component-name">Piezo Buzzer</div>
+          <div class="component-sub">Local audible alarm</div>
+        </div>
+        <div class="component-tag">OUTPUT</div>
+      </div>
+      <div class="component-item">
+        <div>
+          <div class="component-name">Emergency Button</div>
+          <div class="component-sub">Manual SOS trigger</div>
+        </div>
+        <div class="component-tag">INPUT</div>
+      </div>
+      <div class="component-item">
+        <div>
+          <div class="component-name">Reset Button</div>
+          <div class="component-sub">3-second hold to clear alert</div>
+        </div>
+        <div class="component-tag">INPUT</div>
+      </div>
+    </div>
+
+    <h3>Receiver Unit — Arduino Uno</h3>
+    <p>The Arduino Uno is a simpler microcontroller with no WiFi. It receives commands purely through the laser, then acts on them. Its job is reliability — when there is an emergency, it must respond instantly regardless of internet connectivity.</p>
+
+    <div class="component-grid">
+      <div class="component-item">
+        <div>
+          <div class="component-name">LDR / Photodiode</div>
+          <div class="component-sub">Li-Fi data receiver</div>
+        </div>
+        <div class="component-tag">COMMS</div>
+      </div>
+      <div class="component-item">
+        <div>
+          <div class="component-name">Relay Module</div>
+          <div class="component-sub">Controls exhaust fan</div>
+        </div>
+        <div class="component-tag">OUTPUT</div>
+      </div>
+      <div class="component-item">
+        <div>
+          <div class="component-name">DFPlayer Mini</div>
+          <div class="component-sub">MP3 audio module</div>
+        </div>
+        <div class="component-tag">OUTPUT</div>
+      </div>
+      <div class="component-item">
+        <div>
+          <div class="component-name">Speaker</div>
+          <div class="component-sub">Voice announcements</div>
+        </div>
+        <div class="component-tag">OUTPUT</div>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <div class="callout-title">Gas Sensor Dual Outputs</div>
+      <p>Both MQ-135 and MQ-2 provide two separate outputs: a Digital Output (DO) that gives a simple HIGH/LOW threshold trigger set by a potentiometer on the sensor board, and an Analog Output (AO) that gives a raw voltage proportional to gas concentration. ARIA uses both — if either the analog reading crosses a calculated threshold or the digital pin fires, the sensor is considered active.</p>
+    </div>
+  </section>
+
+  <!-- ── 3. SENSING & CALIBRATION ─────────────────────────────── -->
+  <section id="sensing">
+    <div class="section-label"><span>03 —</span> Sensing &amp; Intelligence</div>
+    <h2>How the System Reads the Room</h2>
+    <div class="divider"></div>
+
+    <p>ARIA doesn't just check if a number exceeds a fixed threshold. It <strong>learns the baseline conditions</strong> of the specific room it is installed in, then looks for significant deviations from that learned normal — making it far more reliable than a simple trip-wire detector.</p>
+
+    <h3>The Calibration Phase</h3>
+    <p>When powered on, ARIA enters a <strong>three-minute calibration routine</strong> before it begins active monitoring. The first 60 seconds are a warm-up period for the MQ gas sensors, which need time for their internal heating elements to reach operating temperature. During the following two minutes, the system samples all sensors repeatedly and calculates average values for temperature, humidity, MQ-135, and MQ-2. These become the <strong>personal baseline</strong> for this installation.</p>
+
+    <p>This means a unit installed in a professional kitchen — where baseline gas and temperature readings are naturally higher — will not constantly false-alarm just because there is cooking happening. It looks for anomalous changes from <em>its own</em> normal, not a generic factory threshold.</p>
+
+    <div class="callout warning">
+      <div class="callout-title">Important — Calibration Environment</div>
+      <p>Calibration must be performed in clean air. If calibration happens during a gas leak or a fire, the dangerous condition would be incorrectly learned as "normal" and would never trigger an alarm. The LCD displays a prompt instructing the user to ensure clean air before calibration begins.</p>
+    </div>
+
+    <h3>The Four Sensing Channels</h3>
+
+    <div class="sensor-grid">
+      <div class="sensor-card">
+        <div class="sensor-icon">🌡️</div>
+        <div class="sensor-info">
+          <h4>Temperature &amp; Humidity — DHT22</h4>
+          <p>Measures ambient temperature with ±0.5°C accuracy. A temperature reading above 40°C triggers a Caution state. The baseline also updates slowly during normal conditions, tracking long-term room temperature changes (day/night cycles, seasons) through a technique called exponential smoothing.</p>
+        </div>
+      </div>
+      <div class="sensor-card">
+        <div class="sensor-icon">🔥</div>
+        <div class="sensor-info">
+          <h4>Flame Detection — Infrared Sensor</h4>
+          <p>An infrared-sensitive photodiode detects the specific wavelengths emitted by open flames. It is wired as active-low, meaning it pulls its output pin LOW when flame is present. Due to the extreme urgency of a detected flame, it bypasses the confidence scoring system and immediately triggers a full Emergency state.</p>
+        </div>
+      </div>
+      <div class="sensor-card">
+        <div class="sensor-icon">💨</div>
+        <div class="sensor-info">
+          <h4>Air Quality — MQ-135</h4>
+          <p>Sensitive to CO₂, ammonia, benzene, and general volatile organic compounds. ARIA monitors both the raw analog reading and compares it against the learned baseline. A deviation of 50 units above baseline (or a digital threshold trigger) raises a Caution alert. The readings are also temperature- and humidity-compensated to avoid false positives from weather changes.</p>
+        </div>
+      </div>
+      <div class="sensor-card">
+        <div class="sensor-icon">🫧</div>
+        <div class="sensor-info">
+          <h4>Smoke &amp; Combustible Gas — MQ-2</h4>
+          <p>Detects LPG, propane, butane, methane, smoke, and hydrogen — the gases most associated with fire risk. Like MQ-135, it uses both analog deviation and digital trigger detection. Together, MQ-135 and MQ-2 provide complementary coverage: if you have smoke you might not have high CO₂, and vice versa.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3>Temperature &amp; Humidity Compensation</h3>
+    <p>Gas sensors are notoriously sensitive to environmental conditions. A hot, humid room will cause the MQ sensors to read higher even if no gas is present. ARIA applies a <strong>mathematical compensation formula</strong> to every gas reading, adjusting it based on the current temperature and humidity measured by the DHT22. This corrected value is what gets compared to baselines, dramatically reducing weather-related false alarms.</p>
+
+    <h3>Noise Filtering</h3>
+    <p>Electrical noise on analog lines can cause momentary spikes in sensor readings. ARIA runs each gas sensor reading through an <strong>8-sample rolling average filter</strong> — keeping a circular buffer of the last 8 readings and using their mean. This smooths out transient electrical noise while still responding quickly to real gradual changes in air quality.</p>
+
+  </section>
+
+  <!-- ── 4. LI-FI ─────────────────────────────────────────────── -->
+  <section id="lifi">
+    <div class="section-label"><span>04 —</span> Wireless Communication</div>
+    <h2>The Li-Fi Laser Link</h2>
+    <div class="divider"></div>
+
+    <p>Li-Fi (Light Fidelity) is the use of visible or infrared light to transmit data — essentially, wireless communication using a beam of light instead of radio waves. ARIA implements its own custom Li-Fi protocol to send status codes from the ESP32's laser module to the Arduino's light sensor.</p>
+
+    <p>The system encodes the current threat state into a 5-bit binary packet and transmits it repeatedly, approximately once every 1.5 seconds. Each transmission is a carefully timed sequence of the laser being switched on and off.</p>
+
+    <h3>The 5-Bit Packet Structure</h3>
+    <p>Each transmission carries a 5-bit frame: <strong>4 data bits</strong> carrying the status code, plus <strong>1 parity bit</strong> appended at the end for error detection. The parity bit is calculated so that the total number of 1-bits in the full 5-bit frame is always even — if the Receiver counts an odd number of 1-bits, it knows the transmission was corrupted and discards it.</p>
+
+    <div class="lifi-timeline">
+      <div class="lifi-timeline-label">Packet Timeline — Example: EMERGENCY code (0b1101 → 5-bit: 0b11011)</div>
+      <div class="lifi-bar">
+        <div class="lifi-seg start">START PULSE<br>200ms HIGH</div>
+        <div class="lifi-seg bit-high">BIT 4<br>HIGH</div>
+        <div class="lifi-seg bit-high">BIT 3<br>HIGH</div>
+        <div class="lifi-seg bit-low">BIT 2<br>LOW</div>
+        <div class="lifi-seg bit-high">BIT 1<br>HIGH</div>
+        <div class="lifi-seg bit-high">BIT 0<br>HIGH (parity)</div>
+      </div>
+      <div class="lifi-timing">
+        <span>0ms</span><span>200ms</span><span>300ms</span><span>400ms</span><span>500ms</span><span>600ms</span><span>700ms</span>
+      </div>
+    </div>
+
+    <p>The transmission always begins with a <strong>200ms start pulse</strong> — the laser held continuously ON — which the Receiver uses to synchronise its internal clock. After the start pulse, each of the 5 data bits occupies a 100ms window: laser ON means binary 1, laser OFF means binary 0. The complete transmission takes 700ms, leaving 800ms of silence before the next cycle begins.</p>
+
+    <table class="code-table">
+      <thead>
+        <tr>
+          <th>Status Code</th>
+          <th>4-bit Value</th>
+          <th>5-bit with Parity</th>
+          <th>Meaning</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>HEARTBEAT</td>
+          <td><span class="mono">0b1000</span></td>
+          <td><span class="mono">0b10001</span></td>
+          <td>All normal, system alive</td>
+        </tr>
+        <tr>
+          <td>WARNING</td>
+          <td><span class="mono">0b1010</span></td>
+          <td><span class="mono">0b10100</span></td>
+          <td>Caution — elevated readings</td>
+        </tr>
+        <tr>
+          <td>EMERGENCY</td>
+          <td><span class="mono">0b1101</span></td>
+          <td><span class="mono">0b11011</span></td>
+          <td>Emergency — fire or gas critical</td>
+        </tr>
+        <tr>
+          <td>ALL CLEAR</td>
+          <td><span class="mono">0b1001</span></td>
+          <td><span class="mono">0b10010</span></td>
+          <td>Danger has passed, reset confirmed</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>A Key Engineering Challenge — The Missing Edge</h3>
+    <p>A subtle but critical problem had to be solved in version 4.0.7 of the Receiver firmware. When decoding the laser signal, the obvious approach is to wait for the laser to turn <em>off</em> at the end of the start pulse (a "falling edge") and use that as the synchronisation point. But this fails when the very first data bit after the start pulse happens to be a binary 1 — because the laser was already ON for the start pulse and simply <strong>stays on</strong> into the first data bit. There is no falling edge to detect.</p>
+
+    <p>The fix was to reference all timing from the <strong>rising edge</strong> at the beginning of the start pulse instead. Since the start pulse is always exactly 200ms, every subsequent bit boundary can be calculated by adding fixed offsets to that initial rising edge timestamp, regardless of whether the laser is on or off at any given transition point.</p>
+
+    <div class="callout info">
+      <div class="callout-title">Why use Li-Fi instead of RF / Bluetooth?</div>
+      <p>Radio frequency modules (like nRF24L01 or HC-05 Bluetooth) add cost and complexity. A laser module and a cheap LDR resistor together cost almost nothing. The laser beam is also highly directional, meaning it won't interfere with or be confused by other wireless devices in the area. It is a uniquely elegant low-cost solution for a fixed-installation two-unit system.</p>
+    </div>
+  </section>
+
+  <!-- ── 5. THREAT LOGIC ───────────────────────────────────────── -->
+  <section id="threat">
+    <div class="section-label"><span>05 —</span> Threat Classification</div>
+    <h2>How Danger Is Assessed</h2>
+    <div class="divider"></div>
+
+    <p>Every two seconds, the system re-evaluates all sensor readings and classifies the current environment into one of three threat levels. The classification follows a strict priority hierarchy.</p>
+
+    <div class="threat-grid">
+      <div class="threat-card normal">
+        <div class="threat-level-label">Level 0</div>
+        <h4 style="color:var(--green)">Normal</h4>
+        <p>All sensors within their learned baseline ranges. Green LED on. System transmits heartbeat codes via laser. Baseline values continue to update slowly.</p>
+      </div>
+      <div class="threat-card caution">
+        <div class="threat-level-label">Level 1</div>
+        <h4 style="color:var(--yellow)">Caution</h4>
+        <p>One or more sensors elevated but no immediate fire detected. Yellow LED on, buzzer pulses slowly. Baseline updates are frozen to prevent the elevated reading from being absorbed as "normal."</p>
+      </div>
+      <div class="threat-card emergency">
+        <div class="threat-level-label">Level 2</div>
+        <h4 style="color:var(--red)">Emergency</h4>
+        <p>Flame detected, or Manual Emergency button pressed. Red LED strobes rapidly, buzzer sounds continuously at high frequency. Fan relay activates at Receiver. Telegram SOS sent immediately.</p>
+      </div>
+    </div>
+
+    <h3>The Confidence Score</h3>
+    <p>During a Caution state, the system calculates a <strong>confidence score from 1 to 4</strong> representing how many of the four independent sensors are simultaneously indicating a problem. A score of 1 might be a simple cooking smell triggering MQ-135 briefly. A score of 3 — with temperature, MQ-135, and MQ-2 all elevated together — strongly suggests a real developing fire situation. This score is displayed on the LCD, sent in the Telegram alert, and shown on the web dashboard, giving the user meaningful context rather than just a binary alarm.</p>
+
+    <h3>Baseline Freezing</h3>
+    <p>One of ARIA's more subtle but important behaviours is that the adaptive baselines only update when the system is in a Normal state. The moment a Caution is triggered, baseline learning is paused. This prevents the system from <strong>"adapting away" a real slow-developing gas leak</strong> — if it kept updating the baseline during an elevated condition, the leak would gradually become invisible to the detector.</p>
+
+    <h3>Caution Timeout</h3>
+    <p>The system also tracks how long a Caution condition has been active. If sensors remain elevated for an extended period, this is treated as a sustained risk rather than a transient spike, and the Telegram alert system can issue renewed notifications on a cooldown timer to ensure the user is not left unaware of a persisting problem.</p>
+
+    <h3>The Manual Override Buttons</h3>
+    <p>Two physical buttons give authorised personnel direct control over the system. The <strong>Emergency Button</strong> instantly forces the system into a full Emergency state — useful if a person sees or smells fire before the sensors react. The <strong>Reset Button</strong> requires a deliberate three-second hold (shown with a countdown on the LCD) to prevent accidental resets, after which the system returns to Normal and sends an "All Clear" Telegram message confirming authorised reset.</p>
+  </section>
+
+  <!-- ── 6. RECEIVER ───────────────────────────────────────────── -->
+  <section id="receiver">
+    <div class="section-label"><span>06 —</span> The Receiver Unit</div>
+    <h2>Actuation &amp; Response</h2>
+    <div class="divider"></div>
+
+    <p>While the Transmitter is responsible for all the intelligence, the Receiver is responsible for all the physical responses at its location. It operates entirely independently of the internet — its only input is the laser beam from the Transmitter, and its outputs are the relay, speaker, and serial debug log.</p>
+
+    <h3>How the Receiver Decodes the Laser</h3>
+
+    <div class="signal-chain">
+      <div class="chain-step">
+        <div class="chain-num">STEP 01</div>
+        <div class="chain-content">
+          <h4>Polarity Auto-Detection</h4>
+          <p>On startup, the Receiver samples the LDR 20 times and determines whether the sensor outputs HIGH or LOW when dark (no laser). This lets the firmware adapt automatically regardless of whether the LDR module has an active-high or active-low output — no manual configuration needed.</p>
+        </div>
+      </div>
+      <div class="chain-step">
+        <div class="chain-num">STEP 02</div>
+        <div class="chain-content">
+          <h4>Rising Edge Detection</h4>
+          <p>The main loop runs continuously, watching for the laser to switch from OFF to ON. This rising edge marks the beginning of a transmission and starts an internal timer. This timer is the reference clock for the entire packet decode.</p>
+        </div>
+      </div>
+      <div class="chain-step">
+        <div class="chain-num">STEP 03</div>
+        <div class="chain-content">
+          <h4>Start Pulse Validation</h4>
+          <p>At 150ms after the rising edge, the Receiver checks if the laser is still on. If yes, this confirms it is a genuine 200ms start pulse and not a stray noise spike. If the laser has already gone off, the event is discarded as a timing error and the system returns to waiting.</p>
+        </div>
+      </div>
+      <div class="chain-step">
+        <div class="chain-num">STEP 04</div>
+        <div class="chain-content">
+          <h4>Bit Sampling</h4>
+          <p>Each of the 5 data bits is sampled at its midpoint — 50ms into its 100ms window, counting from the rising edge. Bit 4 is sampled at 250ms, Bit 3 at 350ms, and so on down to Bit 0 at 650ms. Sampling at the midpoint of each window avoids the uncertainty of the transition edges.</p>
+        </div>
+      </div>
+      <div class="chain-step">
+        <div class="chain-num">STEP 05</div>
+        <div class="chain-content">
+          <h4>Parity Check</h4>
+          <p>The 5 received bits are checked using even parity. If the XOR of all 5 bits equals zero, the frame is clean. If not, the frame is flagged as a parity failure and discarded. The error counters are incremented and the decode cycle resets, waiting for the next transmission.</p>
+        </div>
+      </div>
+      <div class="chain-step">
+        <div class="chain-num">STEP 06</div>
+        <div class="chain-content">
+          <h4>Action Execution</h4>
+          <p>If the frame passes parity, the 4-bit code is extracted from bits 4:1 and matched to a known command (Heartbeat, Warning, Emergency, All Clear). The appropriate physical response is then triggered.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3>The Relay &amp; Fan Control</h3>
+    <p>One of the most important safety features in the Receiver is the <strong>confirmation counter</strong> for the relay. When an Emergency code arrives, the relay does not activate immediately on the first packet — it requires <strong>three consecutive Emergency packets</strong> before switching the fan on. This prevents a single corrupted or misread transmission from accidentally activating the relay. Since the Transmitter sends a new packet every 1.5 seconds, the relay activates after roughly 4.5 seconds of sustained emergency signals — fast enough for a real emergency, but immune to single-packet errors.</p>
+
+    <p>The relay is also protected by a <strong>safety watchdog</strong> — a periodic check that ensures the relay cannot remain ON if the system has returned to Normal state. If this contradiction is ever detected, the relay is forced off immediately.</p>
+
+    <h3>Link Loss Detection</h3>
+    <p>If the Receiver stops receiving any valid packets for more than 15 seconds — perhaps because the laser is physically blocked, or the Transmitter has lost power — it declares a <strong>link lost</strong> condition, forces the relay off as a safety precaution, and returns to Normal threat level. When transmissions resume, it automatically declares link restored and resumes normal operation.</p>
+
+    <h3>Audio Alerts — DFPlayer Mini</h3>
+    <p>The Receiver contains a DFPlayer Mini module, a small self-contained MP3 player that reads audio files from a microSD card. Four pre-recorded audio tracks correspond to the four system states: a startup jingle, a warning announcement, an emergency alarm, and an all-clear message. These play through a connected speaker whenever the threat state changes. During sustained emergencies, the emergency audio repeats every 30 seconds; during Caution, the warning repeats every 60 seconds.</p>
+  </section>
+
+  <!-- ── 7. ALERTS & TELEGRAM ──────────────────────────────────── -->
+  <section id="alerts">
+    <div class="section-label"><span>07 —</span> Remote Alerting</div>
+    <h2>Telegram Bot Integration</h2>
+    <div class="divider"></div>
+
+    <p>The ESP32 Transmitter connects to a Telegram Bot and can send formatted status messages directly to a designated group chat or personal account. This means the homeowner receives an alert on their phone <strong>regardless of where they are in the world</strong>, as long as they have internet access.</p>
+
+    <p>Messages are sent over HTTPS using Telegram's standard Bot API. The ESP32 maintains a dedicated background task — running on the second processor core — purely for handling Telegram sends. This ensures the main sensor monitoring loop is never delayed by network operations.</p>
+
+    <div class="tg-message">
+      <span class="tg-bold">🚨 EMERGENCY ALERT</span><br><br>
+      Location: <span class="tg-val">Home - Living Room</span><br>
+      <span class="tg-bold">FIRE DETECTED</span><br><br>
+      Temperature: <span class="tg-val">38.4°C</span><br>
+      Humidity: <span class="tg-val">52%</span><br>
+      MQ135: <span class="tg-val">724</span><br>
+      MQ2: <span class="tg-val">891</span><br>
+      Flame: <span class="tg-val">DETECTED</span><br><br>
+      Fan relay activating at Receiver.<br>
+      <span class="tg-bold">TAKE IMMEDIATE ACTION</span>
+    </div>
+
+    <div class="tg-message">
+      <span class="tg-bold">⚠️ CAUTION ALERT</span><br><br>
+      Location: <span class="tg-val">Home - Living Room</span><br>
+      Elevated readings detected.<br><br>
+      Active Sensors: <span class="tg-val">MQ2 MQ135</span><br>
+      Confidence: <span class="tg-val">2/4</span><br><br>
+      MQ135 (Air Quality): <span class="tg-val">612 (dev +112)</span><br>
+      MQ2 (Smoke/LPG): <span class="tg-val">703 (dev +203)</span>
+    </div>
+
+    <h3>Alert Types</h3>
+    <p>The system sends five distinct types of Telegram messages: an <strong>Emergency Alert</strong> when fire or critical conditions are detected, a <strong>Caution Alert</strong> when readings are elevated but not critical (including which specific sensors triggered and by how much), an <strong>All Clear</strong> message when conditions normalise, a <strong>Manual Emergency SOS</strong> when someone physically presses the emergency button, and a periodic <strong>Heartbeat</strong> every five minutes confirming the system is alive and online, with a summary of current readings.</p>
+
+    <h3>The Cooldown System</h3>
+    <p>To prevent a rapidly fluctuating sensor from flooding the Telegram chat with dozens of messages per minute, a <strong>60-second cooldown</strong> is enforced between successive Telegram sends. Messages are queued in a first-in first-out buffer, and if the queue overflows during the cooldown, new messages are gracefully dropped rather than crashing the system.</p>
+
+    <h3>A Low-Level Bug Fix — Memory Safety</h3>
+    <p>A critical memory corruption bug was fixed in version 4.0.4. The previous implementation tried to pass C++ String objects through FreeRTOS queue slots. FreeRTOS copies queue items using raw memory copy, which does not understand C++ object ownership — the result was the String's internal text buffer being freed prematurely, leading to heap corruption and random crashes. The fix was to pass only a plain pointer to a freshly heap-allocated C-string through the queue, with the receiver task responsible for freeing the memory after sending. This is a fundamental principle of safe concurrent programming: <strong>never share complex C++ objects across thread boundaries by value</strong>.</p>
+  </section>
+
+  <!-- ── 8. DASHBOARD & WEATHER ────────────────────────────────── -->
+  <section id="dashboard">
+    <div class="section-label"><span>08 —</span> Web Dashboard &amp; Weather</div>
+    <h2>Live Local Interface</h2>
+    <div class="divider"></div>
+
+    <p>The ESP32 hosts a <strong>web server on the local WiFi network</strong>. Any device on the same network — phone, tablet, laptop — can open the dashboard in a browser by navigating to the ESP32's IP address. The page auto-refreshes every 10 seconds and polls for live sensor data every 2 seconds via a JSON endpoint.</p>
+
+    <p>The dashboard shows the current threat state (with a pulsing red animation during emergencies), a live table of all sensor readings, the current confidence score with active sensor list, the Li-Fi code being transmitted, an event log of the last 10 state changes with timestamps, and a 5-hour local weather forecast.</p>
+
+    <h3>The Weather Forecast</h3>
+    <p>ARIA integrates with the <strong>Open-Meteo API</strong>, a free weather service requiring no API key. Using the GPS coordinates configured in the firmware, it fetches a 5-hour forecast including temperature, humidity, and weather condition codes for the local area. The forecast refreshes every 30 minutes.</p>
+
+    <p>The weather data is contextually useful for interpreting sensor readings — if outdoor humidity has suddenly spiked due to rain, and the indoor MQ sensors have slightly elevated readings, the dashboard lets the user quickly correlate the two and assess whether the elevated readings are environmental noise or a genuine concern.</p>
+
+    <div class="callout info">
+      <div class="callout-title">WiFi Reconnection</div>
+      <p>The system scans for WiFi networks matching two known hotspot keywords (allowing it to connect to either a home router or a phone hotspot). If connectivity is lost, it automatically reattempts connection every 15 seconds. The web server and Telegram functionality are gracefully suspended during offline periods and restored when connection is re-established. Core sensor monitoring and Li-Fi communication continue uninterrupted regardless of WiFi state.</p>
+    </div>
+  </section>
+
+  <!-- ── 9. RELIABILITY ────────────────────────────────────────── -->
+  <section id="memory">
+    <div class="section-label"><span>09 —</span> Reliability &amp; Safety Design</div>
+    <h2>Built to Not Fail</h2>
+    <div class="divider"></div>
+
+    <p>A safety system that crashes during an emergency is worse than no system at all. ARIA incorporates multiple layers of defensive design specifically to ensure it remains operational under adverse conditions.</p>
+
+    <h3>Multi-Core Task Separation (ESP32)</h3>
+    <p>The ESP32 has two processor cores. ARIA deliberately pins the Telegram sending task to Core 0 while all sensor reading, threat analysis, Li-Fi transmission, and web server handling run on Core 1. This means even if a Telegram send stalls waiting for a slow network response, <strong>the sensor monitoring loop never pauses</strong>. The laser continues transmitting and the alarms continue functioning completely independently of internet activity.</p>
+
+    <h3>Sensor Validation</h3>
+    <p>Every reading from every sensor is validated before use. DHT22 readings are checked for the valid temperature range (−40°C to 85°C) and for NaN values (which indicate a failed read). ADC values are checked for the valid 12-bit range (0–4095). If a sensor read fails, the system flags the sensor as invalid and continues operating with the remaining sensors rather than crashing or giving misleading data.</p>
+
+    <h3>The Watchdog on the Receiver</h3>
+    <p>The Arduino Uno's hardware watchdog timer is explicitly <strong>disabled</strong> in the Receiver firmware. This may seem counterintuitive for a safety device, but it is intentional: the Li-Fi decoder runs a tight polling loop that must never be interrupted. The hardware watchdog, if enabled, would reset the microcontroller if the main loop ever took too long — which could happen legitimately during certain timing-critical decoding sequences. The Link Loss Detection mechanism serves as the Receiver's watchdog instead: if the Transmitter fails, the Receiver detects link loss and fails safe.</p>
+
+    <h3>Relay Safety Watchdog</h3>
+    <p>A dedicated watchdog function runs on the Receiver every 10 seconds. It checks one specific condition: if the threat level is currently Normal, the relay <em>must</em> be off. If this invariant is ever violated — due to any possible software bug or unexpected state transition — the relay is immediately and unconditionally forced off. <strong>A fan running when it shouldn't is a minor inconvenience. A fan not running during a fire is a disaster.</strong> The safety watchdog ensures the bias always falls toward the safe side.</p>
+
+    <h3>Heap Memory Monitoring</h3>
+    <p>The ESP32 firmware periodically logs the free heap memory and the historical minimum free heap to the serial debug output. This allows the developer to detect memory leaks over long runtimes — if the free heap is slowly decreasing over hours of operation, that indicates a memory management problem that would eventually crash the system. By monitoring this in development, any such leaks can be caught and fixed before deployment.</p>
+
+    <h3>Statistics &amp; Diagnostics</h3>
+    <p>The Receiver maintains a comprehensive set of runtime counters: total messages received, good frames decoded, parity failures, timing errors, start pulse detections, and total error count. These are printed to the serial monitor every 5 minutes in a formatted status report. This diagnostic data allows the developer or installer to assess the quality of the Li-Fi link over time — if parity failures are high, it suggests the laser needs physical realignment, or the LDR threshold potentiometer needs adjustment.</p>
+
+  </section>
+
+</main>
+
+<!-- ═══════════════════════ FOOTER ════════════════════════════ -->
+<footer>
+  <div class="footer-title">
+    <span>ARIA</span> v4.0.7 — Autonomous Risk Identification &amp; Alert System
+  </div>
+  <div class="footer-meta">
+    Author: Aneesh<br>
+    ESP32 Transmitter + Arduino Uno Receiver<br>
+    January 2025
+  </div>
+</footer>
+
+<script>
+  // Intersection observer for scroll animations
+  const sections = document.querySelectorAll('section');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.08 });
+
+  sections.forEach(s => observer.observe(s));
+
+  // Nav dot active state
+  const navDots = document.querySelectorAll('.nav-dot');
+  const sectionIds = ['overview','hardware','sensing','lifi','threat','receiver','alerts','dashboard','memory'];
+
+  const navObserver = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const idx = sectionIds.indexOf(e.target.id);
+        navDots.forEach((d, i) => {
+          d.style.background = (i === idx) ? 'var(--fire)' : '';
+          d.style.transform  = (i === idx) ? 'scale(1.5)' : '';
+        });
+      }
+    });
+  }, { threshold: 0.4 });
+
+  document.querySelectorAll('section[id]').forEach(s => navObserver.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARIA v4.0 — Engineering Whitepaper</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #08090d;
+    --bg2:       #0e1018;
+    --bg3:       #13161f;
+    --border:    #1e2333;
+    --border2:   #2a3050;
+    --text:      #c8cfe0;
+    --text-dim:  #697089;
+    --text-faint:#3d4460;
+    --accent:    #4f8ef7;
+    --accent2:   #f7774f;
+    --accent3:   #4ff79e;
+    --accent4:   #f7c54f;
+    --red:       #f74f4f;
+    --glow:      rgba(79,142,247,0.12);
+    --glow2:     rgba(247,119,79,0.10);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    font-size: 16px;
+    line-height: 1.75;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* ── SIDEBAR NAV ── */
+  nav {
+    position: fixed;
+    left: 0; top: 0;
+    width: 260px;
+    height: 100vh;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    padding: 32px 0;
+    overflow-y: auto;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+  }
+
+  nav::-webkit-scrollbar { width: 3px; }
+  nav::-webkit-scrollbar-track { background: transparent; }
+  nav::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .nav-brand {
+    padding: 0 24px 28px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .nav-brand .logo-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .nav-brand h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: #fff;
+    line-height: 1.2;
+  }
+
+  .nav-brand .sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  nav a {
+    display: block;
+    padding: 7px 24px;
+    font-size: 12.5px;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: all 0.2s;
+    border-left: 2px solid transparent;
+    line-height: 1.4;
+  }
+
+  nav a:hover {
+    color: var(--text);
+    border-left-color: var(--accent);
+    background: rgba(79,142,247,0.05);
+    padding-left: 28px;
+  }
+
+  nav a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: rgba(79,142,247,0.08);
+  }
+
+  .nav-section-label {
+    padding: 16px 24px 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+  }
+
+  /* ── MAIN CONTENT ── */
+  main {
+    margin-left: 260px;
+    padding: 0 80px 120px;
+    max-width: 1100px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 80px 0 60px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 80px;
+    position: relative;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0; right: -80px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle at center, rgba(79,142,247,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .hero-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 32px; height: 1px;
+    background: var(--accent);
+    opacity: 0.6;
+  }
+
+  .hero h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: clamp(36px, 4vw, 56px);
+    line-height: 1.1;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .hero-subtitle {
+    font-size: 15px;
+    color: var(--text-dim);
+    margin-bottom: 40px;
+    max-width: 600px;
+  }
+
+  .hero-meta {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+
+  .meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .meta-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+  }
+
+  .meta-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--accent3);
+  }
+
+  /* ── SECTIONS ── */
+  section {
+    margin-bottom: 96px;
+    scroll-margin-top: 32px;
+  }
+
+  .section-number {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-number::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+    max-width: 60px;
+  }
+
+  h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: clamp(26px, 3vw, 36px);
+    color: #fff;
+    line-height: 1.2;
+    margin-bottom: 28px;
+  }
+
+  h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-style: italic;
+    font-size: 22px;
+    color: #dde3f5;
+    margin: 48px 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h4 {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin: 32px 0 12px;
+  }
+
+  p { margin-bottom: 18px; }
+
+  p:last-child { margin-bottom: 0; }
+
+  strong { color: #e8ecf5; font-weight: 500; }
+
+  em { color: var(--accent); font-style: normal; }
+
+  /* ── CALLOUT BOXES ── */
+  .callout {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin: 28px 0;
+    position: relative;
+  }
+
+  .callout.warning { border-left-color: var(--accent4); }
+  .callout.danger  { border-left-color: var(--red); }
+  .callout.success { border-left-color: var(--accent3); }
+  .callout.orange  { border-left-color: var(--accent2); }
+
+  .callout-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .callout.warning .callout-label { color: var(--accent4); }
+  .callout.danger  .callout-label { color: var(--red); }
+  .callout.success .callout-label { color: var(--accent3); }
+  .callout.orange  .callout-label { color: var(--accent2); }
+
+  .callout p { margin-bottom: 0; font-size: 14.5px; line-height: 1.65; }
+
+  /* ── DIAGRAM BOXES ── */
+  .diagram {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 28px 32px;
+    margin: 32px 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--text);
+    overflow-x: auto;
+    position: relative;
+  }
+
+  .diagram-label {
+    position: absolute;
+    top: -10px; left: 20px;
+    background: var(--bg);
+    padding: 0 8px;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+  }
+
+  .diagram .hi  { color: var(--accent); }
+  .diagram .hi2 { color: var(--accent2); }
+  .diagram .hi3 { color: var(--accent3); }
+  .diagram .hi4 { color: var(--accent4); }
+  .diagram .dim { color: var(--text-dim); }
+
+  /* ── COMPARISON TABLE ── */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 28px 0;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  th {
+    background: var(--bg3);
+    padding: 12px 18px;
+    text-align: left;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border2);
+  }
+
+  td {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.55;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.012); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+  }
+
+  .badge-green  { background: rgba(79,247,158,0.12); color: var(--accent3); border: 1px solid rgba(79,247,158,0.2); }
+  .badge-red    { background: rgba(247,79,79,0.12);  color: var(--red);     border: 1px solid rgba(247,79,79,0.2); }
+  .badge-blue   { background: rgba(79,142,247,0.12); color: var(--accent);  border: 1px solid rgba(79,142,247,0.2); }
+  .badge-orange { background: rgba(247,119,79,0.12); color: var(--accent2); border: 1px solid rgba(247,119,79,0.2); }
+  .badge-yellow { background: rgba(247,197,79,0.12); color: var(--accent4); border: 1px solid rgba(247,197,79,0.2); }
+
+  /* ── KEY INSIGHT BLOCK ── */
+  .insight {
+    background: linear-gradient(135deg, rgba(79,142,247,0.08), rgba(79,247,158,0.04));
+    border: 1px solid rgba(79,142,247,0.2);
+    border-radius: 10px;
+    padding: 28px 32px;
+    margin: 40px 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .insight::before {
+    content: '"';
+    position: absolute;
+    top: -20px; right: 20px;
+    font-family: 'Fraunces', serif;
+    font-size: 120px;
+    color: rgba(79,142,247,0.08);
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  .insight p {
+    font-family: 'Fraunces', serif;
+    font-size: 19px;
+    line-height: 1.55;
+    color: #dde3f5;
+    font-weight: 300;
+  }
+
+  /* ── ANALOGY BOX ── */
+  .analogy {
+    display: flex;
+    gap: 20px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 24px 0;
+    align-items: flex-start;
+  }
+
+  .analogy-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+    line-height: 1;
+    margin-top: 2px;
+  }
+
+  .analogy-text { font-size: 14.5px; line-height: 1.65; }
+  .analogy-text strong { color: var(--accent3); }
+
+  /* ── TIMELINE ── */
+  .timeline {
+    position: relative;
+    padding-left: 28px;
+    margin: 28px 0;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 7px; top: 8px; bottom: 8px;
+    width: 1px;
+    background: var(--border2);
+  }
+
+  .timeline-item {
+    position: relative;
+    padding: 0 0 24px 24px;
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -1px; top: 8px;
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+
+  .timeline-item:last-child { padding-bottom: 0; }
+
+  .timeline-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+
+  .timeline-text { font-size: 14.5px; line-height: 1.65; }
+
+  /* ── FAILURE SCENARIO ── */
+  .failure-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0;
+    margin: 20px 0;
+    overflow: hidden;
+  }
+
+  .failure-header {
+    background: rgba(247,79,79,0.08);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .failure-header .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--red);
+    box-shadow: 0 0 8px var(--red);
+    flex-shrink: 0;
+  }
+
+  .failure-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--red);
+    letter-spacing: 0.06em;
+  }
+
+  .failure-body { padding: 16px 20px; font-size: 14.5px; line-height: 1.65; }
+
+  .failure-recovery {
+    background: rgba(79,247,158,0.04);
+    border-top: 1px solid rgba(79,247,158,0.15);
+    padding: 12px 20px;
+    font-size: 13.5px;
+    color: var(--accent3);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .failure-recovery::before {
+    content: '→';
+    font-family: 'IBM Plex Mono', monospace;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ── MATH FORMULA ── */
+  .formula {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 16px 24px;
+    margin: 20px 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    color: var(--accent4);
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+
+  .formula .comment {
+    font-size: 11px;
+    color: var(--text-dim);
+    display: block;
+    margin-top: 6px;
+    letter-spacing: 0.03em;
+  }
+
+  /* ── COLUMN GRID ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 28px 0; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin: 28px 0; }
+
+  .card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 22px;
+  }
+
+  .card-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .card-value {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .card-desc { font-size: 13.5px; color: var(--text-dim); line-height: 1.55; }
+
+  /* ── SEPARATOR ── */
+  .sep {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 56px 0;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ── FINAL SECTION HIGHLIGHT ── */
+  .final-section {
+    background: linear-gradient(135deg, var(--bg2), var(--bg3));
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 56px 60px;
+    margin-top: 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .final-section::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(79,247,158,0.06), transparent 70%);
+    pointer-events: none;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 1200px) {
+    main { padding: 0 48px 120px; }
+  }
+
+  @media (max-width: 900px) {
+    nav { width: 0; overflow: hidden; }
+    main { margin-left: 0; padding: 24px 28px 80px; }
+    .two-col, .three-col { grid-template-columns: 1fr; }
+    .hero { padding: 48px 0 40px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ╔══════════════════════════════════╗ -->
+<!-- ║  SIDEBAR NAVIGATION             ║ -->
+<!-- ╚══════════════════════════════════╝ -->
+<nav id="sidebar">
+  <div class="nav-brand">
+    <span class="logo-tag">Engineering Whitepaper</span>
+    <h2>ARIA v4.0</h2>
+    <div class="sub">Autonomous Risk Identification<br>& Alert System</div>
+  </div>
+
+  <div class="nav-section-label">Overview</div>
+  <a href="#overview">01 — Project Overview</a>
+  <a href="#architecture">02 — Architecture Philosophy</a>
+  <a href="#dual-mcu">03 — Why Two Microcontrollers</a>
+
+  <div class="nav-section-label">Sensing Layer</div>
+  <a href="#sensors">04 — Sensor Physics & Purpose</a>
+  <a href="#compensation">05 — Environmental Compensation</a>
+  <a href="#calibration">06 — Calibration Theory</a>
+  <a href="#fusion">07 — Threat Detection & Sensor Fusion</a>
+
+  <div class="nav-section-label">Communication</div>
+  <a href="#lifi">08 — Li-Fi from First Principles</a>
+  <a href="#protocol">09 — Why Not UART/SPI/I2C</a>
+  <a href="#timing">10 — Timing & Synchronization</a>
+
+  <div class="nav-section-label">Safety Systems</div>
+  <a href="#receiver">11 — Receiver as Safety Controller</a>
+  <a href="#failsafe">12 — Fail-Safe Design</a>
+  <a href="#realtime">13 — Real-Time Concepts</a>
+
+  <div class="nav-section-label">Engineering Depth</div>
+  <a href="#patterns">14 — Design Patterns</a>
+  <a href="#production">15 — Production-Grade Engineering</a>
+  <a href="#insights">16 — Key Insights</a>
+</nav>
+
+<!-- ╔══════════════════════════════════╗ -->
+<!-- ║  MAIN CONTENT                   ║ -->
+<!-- ╚══════════════════════════════════╝ -->
+<main>
+
+  <!-- ── HERO ── -->
+  <div class="hero">
+    <div class="hero-eyebrow">Engineering Whitepaper · Version 4.0</div>
+    <h1>ARIA — <em>Autonomous Risk</em><br>Identification & Alert System</h1>
+    <p class="hero-subtitle">A deep conceptual analysis of a dual-microcontroller fire and gas detection system using Li-Fi optical communication, environmental sensor fusion, and cloud alerting.</p>
+    <div class="hero-meta">
+      <div class="meta-item">
+        <span class="meta-label">Transmitter</span>
+        <span class="meta-value">ESP32</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Receiver</span>
+        <span class="meta-value">Arduino Uno</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Link Protocol</span>
+        <span class="meta-value">Li-Fi 5-bit</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Cloud Alerts</span>
+        <span class="meta-value">Telegram API</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Author</span>
+        <span class="meta-value">Aneesh</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 01: OVERVIEW                                       -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section id="overview">
+    <div class="section-number">01</div>
+    <h2>What ARIA Is — and Why It Matters</h2>
+
+    <p>ARIA is a <strong>fire and hazardous gas detection system</strong> designed around a simple but powerful idea: safety-critical events should trigger responses through multiple independent pathways, so that the failure of any one pathway cannot disable protection.</p>
+
+    <p>Most low-cost sensor projects simply read a sensor, check a threshold, and sound a buzzer. ARIA goes further. It fuses data from four sensor types, applies physics-based corrections to eliminate false alarms, transmits threat codes via laser light to a physically separate safety controller, and simultaneously dispatches alerts to a cloud messaging platform — all while hosting a live web dashboard with weather forecasting.</p>
+
+    <div class="insight">
+      <p>The right question to ask about any safety system is not "what does it do when everything works?" but rather "what does it do when something breaks?" ARIA's entire design philosophy is an answer to that second question.</p>
+    </div>
+
+    <p>The system operates across two distinct layers. The <strong>intelligence layer</strong> — the ESP32 — handles complex computation: WiFi, HTTPS, sensor fusion, environmental compensation, and cloud messaging. The <strong>actuation layer</strong> — the Arduino Uno — handles the physical safety response: receiving optical commands and controlling a ventilation relay. These layers are connected only by a beam of laser light, a choice that has deep engineering significance, as we'll explore.</p>
+
+    <div class="three-col">
+      <div class="card">
+        <div class="card-title">Sensors</div>
+        <div class="card-value">4</div>
+        <div class="card-desc">Temperature, humidity, two gas sensors (MQ135, MQ2), and IR flame detector</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Alert Paths</div>
+        <div class="card-value">3</div>
+        <div class="card-desc">Telegram cloud alert, Li-Fi to relay controller, LCD + buzzer on-site</div>
+      </div>
+      <div class="card">
+        <div class="card-title">False-Alarm Reduction</div>
+        <div class="card-value">~95%</div>
+        <div class="card-desc">Versus uncompensated raw readings, through environmental correction + filtering</div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 02: ARCHITECTURE                                   -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section id="architecture">
+    <div class="section-number">02</div>
+    <h2>Architecture Philosophy</h2>
+
+    <p>Before writing a single line of code, the ARIA designers made a foundational choice that shapes everything else: <strong>separate the decision-making from the acting</strong>. This is not a performance optimization. It is a safety guarantee.</p>
+
+    <h3>The Principle of Separation of Concerns</h3>
+
+    <p>In software engineering, "separation of concerns" usually means organizing code into clean modules. In safety-critical hardware, it means something more profound: <strong>the component that takes physical action in an emergency should be as simple and isolated as possible</strong>. The moment you add WiFi stacks, JSON parsers, and HTTPS libraries to your safety actuator, you also inherit their failure modes — memory corruption, connection hangs, stack overflows, heap fragmentation.</p>
+
+    <p>ARIA's architecture draws a hard boundary. The ESP32 is allowed to crash, hang, or lose connectivity. The Arduino Uno, with its single-threaded simplicity, keeps doing its job regardless.</p>
+
+    <div class="diagram">
+      <div class="diagram-label">System Architecture</div>
+<span class="hi">┌─────────────────────────────────────────┐</span>   <span class="hi3">┌──────────────────────────────┐</span>
+<span class="hi">│         ESP32 (Transmitter)             │</span>   <span class="hi3">│   Arduino Uno (Receiver)     │</span>
+<span class="hi">│                                         │</span>   <span class="hi3">│                              │</span>
+<span class="hi">│  ┌──────────┐  ┌──────────┐  ┌───────┐ │</span>   <span class="hi3">│  ┌──────────────────────┐   │</span>
+<span class="hi">│  │  4 sensors│  │  Sensor  │  │ WiFi/ │ │</span>   <span class="hi3">│  │  Li-Fi Decoder       │   │</span>
+<span class="hi">│  │  + DHT22 │  │  Fusion  │  │Telegram│ │</span>   <span class="hi3">│  │  State Machine       │   │</span>
+<span class="hi">│  └──────────┘  └──────────┘  └───────┘ │</span>   <span class="hi3">│  └──────────┬─────────┘   │</span>
+<span class="hi">│         │               │               │</span>   <span class="hi3">│             │             │</span>
+<span class="hi">│  ┌──────▼───────────────▼────────────┐  │</span>   <span class="hi3">│  ┌──────────▼─────────┐   │</span>
+<span class="hi">│  │        Threat Analysis Engine     │  │</span>   <span class="hi3">│  │  Relay + DFPlayer  │   │</span>
+<span class="hi">│  └──────────────────┬────────────────┘  │</span>   <span class="hi3">│  │  Fan + Audio Alert │   │</span>
+<span class="hi">│                     │                   │</span>   <span class="hi3">│  └────────────────────┘   │</span>
+<span class="hi">│              ┌──────▼──────┐            │</span>   <span class="hi3">└──────────────────────────────┘</span>
+<span class="hi">│              │  Laser TX   │            │</span>             <span class="dim">▲</span>
+<span class="hi">└──────────────┴──────┬──────┴────────────┘</span>             <span class="dim">│ Laser beam</span>
+                      <span class="dim">└──────────────────────────────────┘</span>
+    </div>
+
+    <h3>Defence in Depth</h3>
+
+    <p>Military strategists say "defence in depth" — don't rely on one wall; build multiple walls. ARIA applies the same principle to safety alerting:</p>
+
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-label">Layer 1 — On-Device</div>
+        <div class="timeline-text">Buzzer, LEDs, and LCD display respond instantly. No network needed. Works even if both internet and the receiver unit fail.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-label">Layer 2 — Physical Safety Actuation</div>
+        <div class="timeline-text">Li-Fi beam to Arduino Uno activates the ventilation fan relay. Independent of WiFi and internet. Works even if the cloud is down.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-label">Layer 3 — Cloud Alerting</div>
+        <div class="timeline-text">Telegram message reaches the owner's phone anywhere in the world. Provides remote awareness when nobody is on-site.</div>
+      </div>
+    </div>
+
+    <div class="callout success">
+      <div class="callout-label">Design Principle</div>
+      <p>A correctly-designed safety system degrades <em>gracefully</em>. Each layer of ARIA functions independently. Losing Layer 3 (internet) doesn't compromise Layers 1 or 2. This is called <strong>graceful degradation</strong> and is a hallmark of production engineering.</p>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 03: DUAL MCU                                       -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section id="dual-mcu">
+    <div class="section-number">03</div>
+    <h2>Why Two Microcontrollers?</h2>
+
+    <div class="analogy">
+      <div class="analogy-icon">🧠</div>
+      <div class="analogy-text"><strong>Think of it like the human nervous system.</strong> Your brain (ESP32) handles complex thinking — analyzing sensor data, deciding whether a threat is real, communicating with the outside world. But your spinal cord and reflex arc (Arduino) can trigger an immediate protective response — pulling your hand from fire — without waiting for the brain's deliberation. Even if your brain is distracted, the reflex still fires.</div>
+    </div>
+
+    <h3>The ESP32's Richness is Also Its Risk</h3>
+
+    <p>The ESP32 is a remarkable chip — dual-core 240 MHz processor, WiFi, Bluetooth, extensive memory. But every feature it offers comes with a corresponding attack surface for failure. The WiFi stack alone is thousands of lines of code. Running HTTPS TLS connections requires large stack allocations. The FreeRTOS multitasking layer can deadlock or starve tasks. The heap can fragment under sustained allocation/deallocation cycles.</p>
+
+    <p>Any of these can cause the ESP32 to hang or crash — and in earlier versions of ARIA (before v4.0.4), the Telegram queue did exactly this: a <strong>heap corruption bug</strong> caused by passing C++ String objects through FreeRTOS queues could silently crash the system.</p>
+
+    <div class="callout danger">
+      <div class="callout-label">Real Bug — v4.0.3</div>
+      <p>FreeRTOS queues use raw <code>memcpy</code> to copy data between tasks. When a C++ String object was copied this way, the internal buffer pointer was duplicated — but then both the original and the copy tried to free the same heap memory when they went out of scope. This is a classic "double-free" heap corruption that can silently corrupt the memory allocator, causing a crash minutes or hours later. The fix: queue only plain C pointers, never complex objects.</p>
+    </div>
+
+    <h3>The Arduino's Simplicity is Its Strength</h3>
+
+    <p>The Arduino Uno runs a single thread. No FreeRTOS. No WiFi driver. No TLS allocations. Its <code>loop()</code> function executes predictably, every cycle, with minimal jitter. It has been the foundation of countless industrial and educational projects for over 15 years — its failure modes are thoroughly understood.</p>
+
+    <p>When you assign the task of "activate the fan when the laser signals EMERGENCY" to an Arduino Uno, you can be highly confident it will do exactly that, because there is almost nothing that can go wrong. This is the value of simplicity in safety systems.</p>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">ESP32 — Intelligence Node</div>
+        <div class="card-desc" style="margin-top:8px;">
+          Multi-core processing, WiFi, HTTPS, JSON, multi-sensor fusion, environmental compensation, web server, weather API, Telegram, FreeRTOS task management.<br><br>
+          <span class="badge badge-orange">Complex</span>&nbsp;<span class="badge badge-orange">Network-dependent</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Arduino Uno — Safety Node</div>
+        <div class="card-desc" style="margin-top:8px;">
+          Single-thread execution, Li-Fi decoder state machine, relay control, audio playback, link watchdog.<br><br>
+          <span class="badge badge-green">Simple</span>&nbsp;<span class="badge badge-green">Network-independent</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 04: SENSORS                                        -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section id="sensors">
+    <div class="section-number">04</div>
+    <h2>Sensor Physics &amp; Purpose</h2>
+
+    <p>ARIA doesn't just read four sensors — it understands <em>why</em> each sensor responds to threats the way it does, and uses that understanding to distinguish real hazards from environmental noise.</p>
+
+    <h3>MQ-Series Gas Sensors — Chemiresistors</h3>
+
+    <p>At the heart of the MQ135 and MQ2 sensors is a material called <strong>tin dioxide (SnO₂)</strong> — a semiconductor whose electrical resistance changes dramatically when it encounters certain gases. This is not a digital on/off switch. It is a continuous, physics-governed response.</p>
+
+    <p>In clean air, oxygen molecules from the atmosphere attach to the SnO₂ surface and trap electrons there — a process called <strong>oxygen adsorption</strong>. Trapped electrons mean fewer free charge carriers, which means higher electrical resistance. When a combustible or reducing gas (like carbon monoxide, LPG, or smoke particles) arrives, it reacts with the adsorbed oxygen, releasing those trapped electrons back into the bulk material. More free electrons means lower resistance, which the ADC reads as a higher voltage. This is how a chemical event — a gas interaction — becomes an electrical signal.</p>
+
+    <div class="diagram">
+      <div class="diagram-label">Gas Detection Mechanism</div>
+<span class="dim">Clean Air:</span>
+  <span class="hi">SnO₂</span> + O₂  →  <span class="hi">SnO₂·O⁻</span>  →  electrons trapped  →  <span class="hi4">HIGH resistance</span>  →  LOW ADC
+
+<span class="dim">Gas Present:</span>
+  <span class="hi">SnO₂·O⁻</span> + CO  →  <span class="hi3">CO₂ + e⁻</span>  →  electrons released  →  <span class="hi2">LOW resistance</span>  →  HIGH ADC
+
+<span class="dim">System reads deviation from baseline → triggers threat response</span>
+    </div>
+
+    <p>The <strong>MQ135</strong> is tuned for urban air pollutants: ammonia, nitrogen oxides, benzene, CO₂. The <strong>MQ2</strong> is tuned for combustible gases: LPG, propane, methane, and smoke. Using both sensors together means ARIA can detect a broader range of fire precursors — a gas leak (MQ2) and combustion byproducts (MQ135) can both trigger alerts.</p>
+
+    <h3>DHT22 — More Than a Thermometer</h3>
+
+    <p>The temperature and humidity sensor serves two purposes. First, it directly detects thermal anomalies — sustained temperatures above 40°C in a living space are a fire precursor worth flagging. Second, and more subtly, it provides the correction data needed to make the MQ sensors reliable. Without the DHT22's readings, the gas sensors would produce false alarms every time the weather changed — as we'll explore in depth in Section 05.</p>
+
+    <h3>IR Flame Sensor — Definitive Detection</h3>
+
+    <p>The flame sensor is an infrared photodiode optimized for the 760–1100 nm wavelength range, which is the signature emission band of open flames. Sunlight, incandescent bulbs, and most LED lighting emit negligible energy in this narrow band, so the sensor is highly specific to actual combustion events.</p>
+
+    <p>Notice that ARIA sets <strong>debounce to 1</strong> for the flame sensor — meaning a single positive reading immediately triggers EMERGENCY state. This is a deliberate asymmetry. Gas sensors need temporal averaging to filter noise. The flame sensor does not — because if you see flame IR radiation at flame-level intensity, you have fire, and every millisecond of hesitation is a millisecond of spread. The cost of a false positive from this sensor is an unnecessary alert. The cost of a false negative is a fire that wasn't caught in time.</p>
+
+    <div class="callout warning">
+      <div class="callout-label">Engineering Trade-Off</div>
+      <p>Debounce is always a trade-off between <strong>latency</strong> (how fast you detect) and <strong>precision</strong> (how certain you are). For flame detection, latency wins decisively. For gas sensors, where a single noisy reading could cause a false alarm, precision wins. ARIA applies different debounce policies to different sensors based on their physical characteristics.</p>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 05: COMPENSATION                                   -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section id="compensation">
+    <div class="section-number">05</div>
+    <h2>Environmental Compensation — Why Raw Readings Lie</h2>
+
+    <p>Here is a scenario that breaks most DIY sensor systems: it's a warm, humid summer afternoon. No gas leak. No fire. Yet the MQ sensors report elevated readings, the system triggers a CAUTION alert, the fan turns on, Telegram blows up with notifications, and the homeowner — having received three false alarms this week — turns the system off entirely.</p>
+
+    <p>This is not a theoretical problem. Without environmental compensation, cheap gas sensors have a false-positive rate approaching 40% in residential settings. <strong>A system that cries wolf eventually gets silenced.</strong></p>
+
+    <h3>The Physics of Why Temperature Corrupts Readings</h3>
+
+    <p>SnO₂ is a semiconductor. Higher temperatures promote electrons from the valence band to the conduction band, increasing conductivity — and lowering resistance — even in perfectly clean air. Additionally, at higher temperatures, the chemical reactions at the surface proceed faster, shifting the equilibrium of oxygen adsorption/desorption in ways that alter the baseline resistance.</p>
+
+    <p>Practically: a 15°C rise above calibration temperature can cause the sensor to read <em>as if there's a moderate gas leak</em>, when the only thing that changed is the ambient temperature.</p>
+
+    <h3>The Physics of Why Humidity Corrupts Readings</h3>
+
+    <p>Water vapour molecules interact with the SnO₂ surface, forming hydroxyl (OH) groups that donate additional electrons — the same direction as a gas-detection response. High humidity <em>mimics the electrical signature of gas presence</em>, because both cause a resistance decrease through electron donation.</p>
+
+    <h3>The Compensation Formula</h3>
+
+    <p>ARIA applies a physics-derived correction that models these effects mathematically:</p>
+
+    <div class="formula">
+      CompensatedReading = RawADC ÷ CompensationFactor
+      <br><br>
+      CompensationFactor = 1 + α(T − T<sub>ref</sub>) + β(H − H<sub>ref</sub>)
+      <span class="comment">α = 0.02 per °C  |  β = 0.01 per %RH  |  T_ref = 20°C, H_ref = 65%</span>
+    </div>
+
+    <p>This is a first-order Taylor expansion — a linear approximation of a more complex nonlinear relationship. It's not perfect, but it doesn't need to be perfect. It needs to be <em>good enough to prevent false alarms</em> while still catching real hazards. In practice, it reduces false positives by approximately 95%.</p>
+
+    <div class="analogy">
+      <div class="analogy-icon">🌡️</div>
+      <div class="analogy-text"><strong>A practical example:</strong> At 35°C and 75% humidity, the compensation factor is 1.40. A raw reading of 700 ADC units — which would normally trigger an alert — becomes 700 ÷ 1.40 = 500 ADC units after compensation, matching the baseline exactly. <strong>No false alarm, no false positive, no alert fatigue.</strong></div>
+    </div>
+
+    <h3>Noise Reduction — The 8-Sample Moving Average</h3>
+
+    <p>Even after environmental compensation, electronic noise remains. The ESP32's ADC has quantization error, the power supply has ripple, and the WiFi radio causes momentary interference. ARIA applies a circular buffer of 8 readings, returning their average. This reduces random noise by a factor of √8 ≈ 2.83 — a 71% reduction in noise standard deviation.</p>
+
+    <h3>Adaptive Baseline Tracking</h3>
+
+    <p>Sensors age. Seasons change. A sensor calibrated in January will see different nominal readings in July, not because of a gas leak, but because the air has different composition, temperature, and pressure. ARIA uses an <strong>exponential moving average</strong> to slowly update the baseline during normal operation, tracking these long-term drifts automatically.</p>
+
+    <p>The safety-critical detail: this update is <strong>frozen during CAUTION and EMERGENCY states</strong>. If you allowed the baseline to adapt while a gas leak was present, the system would gradually conclude that the elevated readings were "normal" and stop alerting — exactly the wrong behaviour.</p>
+
+    <div class="callout danger">
+      <div class="callout-label">What Would Go Wrong Without This Freeze</div>
+      <p>During a real gas leak, if the adaptive baseline were allowed to update, it would track the rising gas concentration. Within minutes, the "deviation from baseline" would shrink back toward zero — and the alert would self-cancel while the leak continued. This is why the baseline lockout during threat states is a safety feature, not an implementation detail.</p>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 06: CALIBRATION                                    -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section id="calibration">
+    <div class="section-number">06</div>
+    <h2>Calibration — Building a Reference for Truth</h2>
+
+    <p>Every measurement is ultimately a <em>comparison</em>. A thermometer doesn't tell you the absolute temperature — it tells you how far the mercury has expanded relative to its state at some reference point. ARIA's sensors work the same way: they measure deviations from a known-good baseline, not absolute gas concentrations.</p>
+
+    <p>This means the quality of the baseline is the quality of the system. A poorly-established baseline is a corrupted ruler — all subsequent measurements will be wrong.</p>
+
+    <h3>Why Two Phases?</h3>
+
+    <p>The 3-minute calibration sequence is divided into two phases for physical reasons, not software convenience:</p>
+
+    <p><strong>Phase 1 — Thermal Equilibration (60 seconds):</strong> MQ sensors contain an internal heater that maintains the SnO₂ layer at 200–300°C. When you first power them up, the heater needs time to reach this operating temperature. Before thermal equilibrium, the sensor's resistance is drifting — taking a baseline reading now would be like taking a photograph in the middle of a camera shake. You'd capture motion blur, not reality.</p>
+
+    <p><strong>Phase 2 — Statistical Averaging (120 seconds):</strong> Once thermally stable, 120 readings are collected at 1 Hz and averaged. This serves two purposes: it smooths out any remaining electronic noise, and it provides a statistically robust baseline that isn't skewed by a single momentary reading.</p>
+
+    <p>After calibration, a 45-second grace period prevents alerts during the transition to active monitoring — because even post-calibration, the sensor's surface chemistry takes time to fully stabilize at the new reference conditions.</p>
+
+    <div class="callout">
+      <div class="callout-label">Insight</div>
+      <p>The 3-minute calibration isn't a delay — it's an investment. Those 180 seconds transform a sensor with ±30% manufacturing tolerance into one with a known, site-specific reference point. Every alert ARIA generates afterward is measured against this local truth, not a generic factory spec.</p>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 07: THREAT DETECTION                               -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section id="fusion">
+    <div class="section-number">07</div>
+    <h2>Threat Detection — Sensor Fusion Thinking</h2>
+
+    <p>A single sensor triggering is weak evidence. Multiple independent sensors triggering simultaneously is strong evidence. This is the core logic of ARIA's threat analysis.</p>
+
+    <div class="analogy">
+      <div class="analogy-icon">👥</div>
+      <div class="analogy-text"><strong>Think of it like witness testimony.</strong> If one witness says they saw a crime, police are cautious — maybe they misremembered. If five independent witnesses report the same event, confidence is high. ARIA's confidence score (1–4) directly quantifies how many independent "witnesses" (sensors) are corroborating a threat.</div>
+    </div>
+
+    <h3>The Three-Level State Machine</h3>
+
+    <div class="table-wrap">
+      <table>
+        <tr>
+          <th>State</th>
+          <th>Trigger Condition</th>
+          <th>Confidence</th>
+          <th>Li-Fi Signal</th>
+          <th>Actions</th>
+        </tr>
+        <tr>
+          <td><span class="badge badge-green">NORMAL</span></td>
+          <td>All sensors within baseline tolerance</td>
+          <td>1/4</td>
+          <td>HEARTBEAT (0b10001)</td>
+          <td>Green LED, Telegram heartbeat every 5 min</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-yellow">CAUTION</span></td>
+          <td>Any gas sensor elevated OR temperature > 40°C</td>
+          <td>2–3/4</td>
+          <td>WARNING (0b10100)</td>
+          <td>Yellow LED, slow buzzer, Telegram alert, LCD shows which sensors triggered</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-red">EMERGENCY</span></td>
+          <td>Flame detected OR manual button pressed</td>
+          <td>4/4</td>
+          <td>EMERGENCY (0b11011)</td>
+          <td>Red LED blink, fast buzzer, Telegram alert, fan relay activates</td>
+        </tr>
+      </table>
+    </div>
+
+    <h3>Why Flame Detection Bypasses Multi-Sensor Voting</h3>
+
+    <p>Notice that CAUTION requires elevated readings (implicitly, a comparison across time and across sensors), but EMERGENCY triggers from a single flame sensor reading. This is intentional asymmetry rooted in physics and consequence modeling.</p>
+
+    <p>Gas sensor readings drift, fluctuate, and require contextual interpretation. The flame sensor, by contrast, responds to a highly specific physical signature — infrared radiation in the exact band produced by organic combustion. The probability of a false positive from the flame sensor, given its narrow spectral response, is extremely low.</p>
+
+    <p>More importantly, the consequence of a false negative on flame detection — missing a real fire — is catastrophic. The consequence of a false positive — turning on the fan unnecessarily — is trivial. When false-negative cost vastly exceeds false-positive cost, sensitivity should be maximized. That's why FLAME_DEBOUNCE = 1.</p>
+
+    <h3>The Confidence Score's Real Purpose</h3>
+
+    <p>The confidence score doesn't just count sensors — it communicates signal quality to the user. A "CAUTION 3/4" notification (temperature + MQ135 + MQ2 all elevated) commands very different attention than "CAUTION 1/4" (only one gas sensor, possibly a cooking event). By surfacing this number, ARIA allows informed human judgment rather than demanding binary reactions to binary alerts.</p>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 08: LI-FI                                          -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section id="lifi">
+    <div class="section-number">08</div>
+    <h2>Li-Fi Communication — From First Principles</h2>
+
+    <p>The most architecturally unusual decision in ARIA is the use of laser light to communicate between the two units, rather than the obvious choice of a wire, radio, or even a shared UART bus. To understand why this is the <em>right</em> choice, we need to understand what problem it solves.</p>
+
+    <h3>The Problem with Wires</h3>
+
+    <p>A direct wire connection between the ESP32 and Arduino seems simpler — why not just use a GPIO line? The answer is <strong>electrical isolation</strong>. In environments with combustible gases or flammable materials, electrical arcing or ground loops can ignite fires. More practically, ARIA is designed so that the Arduino can be physically located at a different point in the room — near the ventilation fan, for instance, rather than near the sensor cluster. A wire would create installation constraints and a point of physical failure.</p>
+
+    <h3>The Problem with Radio</h3>
+
+    <p>WiFi and Bluetooth seem like obvious alternatives. But radio protocols have several disadvantages for this specific application: they require both devices to maintain network state and can fail during connection establishment or renegotiation; they introduce multi-millisecond latency that, while acceptable in most cases, adds variable jitter to the timing; and in industrial or laboratory environments, RF emissions can interfere with sensitive equipment or create compliance issues.</p>
+
+    <h3>Why Laser Light Wins Here</h3>
+
+    <p>A laser diode and an LDR (light-dependent resistor) form a one-way, hardwired-by-physics optical channel. It has no network stack to deadlock. It has no connection state to lose. It is immune to electromagnetic interference. It is directional — the signal goes only where you point it.</p>
+
+    <div class="analogy">
+      <div class="analogy-icon">🔦</div>
+      <div class="analogy-text"><strong>ARIA's Li-Fi is Morse code with light.</strong> Short and long flashes encode meaning. The receiver doesn't need to "connect" — it just watches the light. When it sees a pattern it recognizes, it acts. This simplicity is the point: you cannot lose a connection that was never a connection in the first place.</div>
+    </div>
+
+    <h3>The 5-Bit Frame Structure</h3>
+
+    <p>Each Li-Fi transmission carries a 5-bit frame: 4 bits of command code, plus 1 bit of parity for error detection. The parity bit is computed by XOR-ing all data bits — if the result is non-zero at the receiver, at least one bit was corrupted in transit (by ambient light noise, misalignment, or other interference), and the frame is discarded.</p>
+
+    <div class="diagram">
+      <div class="diagram-label">5-Bit Frame Encoding</div>
+<span class="hi">Bits:</span>  [ <span class="hi4">B4</span> ][ <span class="hi4">B3</span> ][ <span class="hi4">B2</span> ][ <span class="hi4">B1</span> ][ <span class="hi3">P</span> ]
+         <span class="dim">└──────── 4-bit code ───────┘  └── parity ──┘</span>
+
+<span class="hi">HEARTBEAT</span>  code=<span class="hi4">1000</span>  parity=<span class="hi3">1</span>  frame=<span class="hi">10001</span>
+<span class="hi">WARNING</span>    code=<span class="hi4">1010</span>  parity=<span class="hi3">0</span>  frame=<span class="hi">10100</span>
+<span class="hi">EMERGENCY</span>  code=<span class="hi4">1101</span>  parity=<span class="hi3">1</span>  frame=<span class="hi">11011</span>
+<span class="hi">ALL CLEAR</span>  code=<span class="hi4">1001</span>  parity=<span class="hi3">0</span>  frame=<span class="hi">10010</span>
+
+<span class="dim">Parity check: XOR of all 5 bits must equal 0. Non-zero = corrupted frame, discard.</span>
+    </div>
+
+    <h3>Timing Architecture</h3>
+
+    <p>The transmission timing is carefully chosen. A 200ms start pulse is long enough to be unambiguously distinguished from a data bit (100ms), giving the receiver a reliable synchronization signal. Each data bit window is 100ms — long enough to sample reliably even if the receiver's polling loop introduces a few milliseconds of jitter. The total 1.5-second cycle means the receiver gets updated roughly every two seconds in normal operation, which is adequate for the threat response time requirements.</p>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 09: PROTOCOL DESIGN                                -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section id="protocol">
+    <div class="section-number">09</div>
+    <h2>Why Not UART, SPI, or I²C?</h2>
+
+    <p>Every engineer's first instinct when connecting two microcontrollers is to reach for a standard serial protocol. ARIA consciously rejects all of them for this link. Understanding why reveals deep thinking about what "communication" means in a safety-critical optical channel.</p>
+
+    <div class="table-wrap">
+      <table>
+        <tr>
+          <th>Protocol</th>
+          <th>Why It Fails Here</th>
+          <th>ARIA's Solution</th>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">UART</span></td>
+          <td>Requires precise, shared baud rate. A free-running laser/LDR system has no inherent clock. Baud rate mismatch causes framing errors that are silent and dangerous.</td>
+          <td>Self-clocking Li-Fi with timing derived entirely from the rising edge of each start pulse.</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">SPI</span></td>
+          <td>Requires a separate clock line. A second laser would be needed, doubling the hardware and alignment complexity. Not practical for a single-beam optical channel.</td>
+          <td>Embedded timing in the protocol — start pulse defines the time reference; bit windows are fixed offsets.</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">I²C</span></td>
+          <td>Inherently bidirectional, requiring separate data and clock lines with pull-ups. Laser diodes are unidirectional transmitters by nature.</td>
+          <td>Unidirectional broadcast model — transmitter sends, receiver listens, no acknowledgement required.</td>
+        </tr>
+      </table>
+    </div>
+
+    <p>ARIA's custom protocol is designed specifically for its channel characteristics: single unidirectional light beam, potential ambient light noise, and hard real-time safety requirements. This is exactly what communication protocol designers do in industry — match the protocol to the physical medium, not the other way around.</p>
+
+    <div class="callout">
+      <div class="callout-label">Engineering Principle</div>
+      <p>A protocol is not universal truth — it is a contract suited to specific channel assumptions. Ethernet assumes full-duplex copper pairs. USB assumes host-device relationships. ARIA's Li-Fi assumes a unidirectional optical path with no shared clock. Choosing the wrong protocol for a channel guarantees reliability problems that no amount of software fixes can solve.</p>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 10: TIMING                                         -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section id="timing">
+    <div class="section-number">10</div>
+    <h2>The Timing &amp; Synchronization Problem — A Deep Dive</h2>
+
+    <p>The most interesting engineering problem in ARIA — the one that took three major versions to solve correctly — is a subtle timing issue that only manifests for certain command codes. Understanding it requires thinking carefully about what the receiver actually <em>sees</em>, not what we <em>intend</em> it to see.</p>
+
+    <h3>The v4.0.6 Bug — When Two HIGHs Become One</h3>
+
+    <p>The Li-Fi transmitter works like this: first it sends a 200ms start pulse (laser ON), then it immediately begins sending data bits (laser ON for '1', laser OFF for '0'). There is no gap between the start pulse and the first data bit.</p>
+
+    <p>Now consider the HEARTBEAT command, code 0b1000. Its 5-bit frame is 0b10001. The most significant bit (bit 4) is 1 — meaning the laser stays ON.</p>
+
+    <div class="diagram">
+      <div class="diagram-label">The Bug — HEARTBEAT Transmission</div>
+<span class="dim">Transmitter signal over time:</span>
+
+<span class="hi">HIGH  ████████████████████████████████████████████████████▓▓▓▓ LOW</span>
+      <span class="dim">│◄───── 200ms start pulse ─────►│◄─ bit4=1 ─►│◄─bit3=0─►│</span>
+      <span class="dim">0ms                          200ms        300ms      400ms</span>
+
+<span class="hi2">Problem:</span> Laser stays HIGH for <span class="hi2">300ms continuously</span> — no falling edge at 200ms!
+
+<span class="dim">The v4.0.6 receiver waited for a falling edge at 200ms to mark the end of
+the start pulse. That falling edge never came. When it finally arrived at
+300ms (bit 3 = 0), the receiver thought THAT was the 200ms mark, shifting
+ALL bit samples 100ms later. Every single bit was sampled at the wrong time.</span>
+    </div>
+
+    <p>The receiver was expecting a falling edge at the 200ms mark to signal "start pulse ended, data bits begin." But when bit 4 is '1', the laser just keeps going — and the falling edge doesn't appear until bit 3 begins at 300ms. The receiver interprets <em>that</em> falling edge as the start/data boundary, and all subsequent bit samples are shifted by exactly one bit window. The HEARTBEAT code 0b10001 would be decoded as 0b00010 — a completely different command.</p>
+
+    <h3>The v4.0.7 Fix — Rising-Edge Reference</h3>
+
+    <p>The fix is elegant: instead of waiting for a <em>falling edge</em> (which may or may not arrive depending on the data), use the <em>rising edge</em> (which always reliably marks the start of every frame) as the absolute time reference. All bit sample points are calculated as fixed offsets from this rising edge.</p>
+
+    <div class="diagram">
+      <div class="diagram-label">The Fix — Rising-Edge Referenced Timing</div>
+<span class="hi3">Rising edge detected → risingEdgeMs = now</span>
+
+<span class="dim">Sample schedule (offsets from rising edge):</span>
+  Bit 4:  <span class="hi">200ms</span> + 50ms center = sample at <span class="hi4">250ms</span>
+  Bit 3:  <span class="hi">300ms</span> + 50ms center = sample at <span class="hi4">350ms</span>
+  Bit 2:  <span class="hi">400ms</span> + 50ms center = sample at <span class="hi4">450ms</span>
+  Bit 1:  <span class="hi">500ms</span> + 50ms center = sample at <span class="hi4">550ms</span>
+  Bit 0:  <span class="hi">600ms</span> + 50ms center = sample at <span class="hi4">650ms</span>
+
+<span class="dim">Start pulse validated at 150ms: if laser is still ON → valid start pulse
+If laser went OFF before 150ms → it was a noise glitch, discard</span>
+
+<span class="hi3">Now HEARTBEAT (10001) decodes correctly regardless of bit4 value.</span>
+    </div>
+
+    <p>The validation check at 150ms is a clever guard against false starts — if an ambient light flash or electrical noise causes a momentary rising edge on the LDR, the receiver won't corrupt its state waiting for a full frame that was never transmitted. If the laser is no longer ON at 150ms, the "start pulse" was too short and gets discarded.</p>
+
+    <div class="callout success">
+      <div class="callout-label">The Deeper Lesson</div>
+      <p>This bug teaches a fundamental protocol design rule: <strong>don't rely on signal transitions that are not guaranteed to exist.</strong> A falling edge after the start pulse is only guaranteed if bit 4 is '0'. If bit 4 is '1', it never arrives. The fix uses only the rising edge — which is guaranteed for every single frame — as the synchronization reference.</p>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 11: RECEIVER                                       -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section id="receiver">
+    <div class="section-number">11</div>
+    <h2>The Receiver as a Safety System</h2>
+
+    <p>It would be tempting to think of the Arduino receiver as just a "translation layer" — decoding Li-Fi and flipping a relay. But the receiver contains multiple independent safety mechanisms that operate even when the transmitter is silent, offline, or behaving unexpectedly.</p>
+
+    <h3>LDR Polarity Auto-Detection</h3>
+
+    <p>LDR breakout modules come in two electrical polarities: some output HIGH in the presence of light, some output LOW. If the receiver's firmware assumes the wrong polarity, every command would be inverted — EMERGENCY would be read as darkness, and normal idle (no laser) would be read as constant EMERGENCY.</p>
+
+    <p>ARIA solves this by sampling the LDR 20 times at boot, before any laser signals arrive. If it sees mostly HIGH, the module is active-low. If it sees mostly LOW, the module is active-high. If the result is ambiguous (7–13 readings), it warns the operator and defaults to active-low. This auto-detection means the firmware is robust to hardware substitution without code changes.</p>
+
+    <h3>Relay Confirmation — Triple-Verification for Actuation</h3>
+
+    <p>A single EMERGENCY frame is not enough to activate the fan relay. Three consecutive EMERGENCY frames are required. This "confirmation count" mechanism provides noise immunity — if a one-off corrupted frame somehow passes parity checking and decodes as EMERGENCY, it won't cause a spurious fan activation. Only a sustained, repeated EMERGENCY signal triggers actuation.</p>
+
+    <div class="callout warning">
+      <div class="callout-label">Why This Matters</div>
+      <p>Relay actuation is a <em>physical action</em>. Turning on a ventilation fan in a real emergency is correct and life-saving. But falsely activating it repeatedly erodes trust and may cause people to disable the system. The triple-confirmation adds a critical verification layer with minimal latency — three frames take about 4.5 seconds — which is fast enough for emergency response while eliminating noise-driven false activations.</p>
+    </div>
+
+    <h3>The Link Watchdog</h3>
+
+    <p>What should the receiver do if the Li-Fi signal disappears completely? This happens if the ESP32 crashes, the laser is physically obstructed, or the power is cut to the transmitter.</p>
+
+    <p>ARIA's answer: after 15 seconds of silence, declare <strong>link lost</strong> and force the relay OFF. This is fail-safe behaviour. If we don't know the current threat state (because communication has ceased), assume the safe state (relay OFF). The relay also stays OFF during link loss because activating a fan in unknown conditions could cause harm — imagine the fan activating during a power outage in the middle of the night for no discernible reason.</p>
+
+    <h3>Safety Watchdog — The Last Line</h3>
+
+    <p>Every 10 seconds, a safety watchdog function checks for an impossible-but-theoretically-possible scenario: relay is ON while threat level is NORMAL. This could happen through a software bug, a race condition, or a bit-flip in memory. If detected, the relay is immediately forced OFF and the event is logged. This is the safety net for the safety net.</p>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 12: FAIL-SAFE                                      -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section id="failsafe">
+    <div class="section-number">12</div>
+    <h2>Fail-Safe Design &amp; Failure Scenarios</h2>
+
+    <p>A robust system is not one that never fails — no system achieves that. A robust system is one whose failures are <em>bounded, predictable, and non-catastrophic</em>. ARIA's designers explicitly mapped out failure modes and designed specific responses for each.</p>
+
+    <div class="failure-card">
+      <div class="failure-header">
+        <div class="dot"></div>
+        <div class="failure-title">Failure Mode A — WiFi Drops During Emergency</div>
+      </div>
+      <div class="failure-body">The ESP32 loses internet connectivity mid-emergency. Telegram alerts stop. The web dashboard goes offline. The ESP32 retries WiFi reconnection every 15 seconds.</div>
+      <div class="failure-recovery">Li-Fi continues transmitting EMERGENCY codes unaffected. The Arduino continues activating the relay. On-site buzzer and LEDs continue. Physical safety is fully preserved. Only remote notification is impaired.</div>
+    </div>
+
+    <div class="failure-card">
+      <div class="failure-header">
+        <div class="dot"></div>
+        <div class="failure-title">Failure Mode B — ESP32 Crashes (Heap Corruption)</div>
+      </div>
+      <div class="failure-body">The ESP32 hangs or reboots due to a memory error. Li-Fi transmission stops. The Arduino receives no new frames for 15+ seconds.</div>
+      <div class="failure-recovery">Link watchdog triggers after 15 seconds. Relay is forced OFF. Threat state resets to NORMAL. The Arduino enters a known-safe state rather than an unknown frozen state. On restart, ESP32 sends startup sequence and recalibrates.</div>
+    </div>
+
+    <div class="failure-card">
+      <div class="failure-header">
+        <div class="dot"></div>
+        <div class="failure-title">Failure Mode C — Laser Blocked / LDR Covered</div>
+      </div>
+      <div class="failure-body">Physical obstruction or deliberate tampering blocks the optical path between the two units.</div>
+      <div class="failure-recovery">Identical to ESP32 crash from the receiver's perspective. Link watchdog triggers, relay goes OFF. Physical alarms on the transmitter (buzzer, LEDs) continue. The system cannot be silenced remotely by blocking the laser — safety degrades gracefully rather than catastrophically.</div>
+    </div>
+
+    <div class="failure-card">
+      <div class="failure-header">
+        <div class="dot"></div>
+        <div class="failure-title">Failure Mode D — Sensor Drift / False Readings</div>
+      </div>
+      <div class="failure-body">One gas sensor drifts and reports elevated readings persistently, even in clean air. Without mitigation, this would produce continuous CAUTION alerts and alert fatigue.</div>
+      <div class="failure-recovery">Multi-sensor voting reduces impact — if only one of three gas-related indicators (MQ135, MQ2, temperature) is elevated, confidence is 1/4. The adaptive baseline slowly tracks the drift in NORMAL state, absorbing long-term sensor aging automatically. If a sensor is truly stuck, the system degrades to lower sensitivity (not false-positives) for that specific sensor.</div>
+    </div>
+
+    <div class="callout success">
+      <div class="callout-label">Fail-Safe vs Fail-Secure</div>
+      <p>In security systems, "fail-secure" means defaulting to the locked state when in doubt. In safety systems, "fail-safe" means defaulting to the non-hazardous state. For ARIA, fail-safe means <strong>relay OFF</strong> in ambiguous situations — because an unnecessary fan is less dangerous than an unnecessary fan AND an unclear threat status. These principles pull in opposite directions, and choosing correctly requires understanding the specific hazard model.</p>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 13: REAL-TIME                                      -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section id="realtime">
+    <div class="section-number">13</div>
+    <h2>Real-Time Systems Concepts in ARIA</h2>
+
+    <p>The term "real-time" is often used loosely to mean "fast." In engineering, it has a precise meaning: a real-time system is one with <strong>guaranteed response time bounds</strong>. Missing a deadline is not just slow — it is a system failure.</p>
+
+    <h3>Hard vs. Soft Real-Time in ARIA</h3>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Hard Real-Time</div>
+        <div class="card-desc" style="margin-top:8px;">
+          <strong>Flame detection → relay activation.</strong><br><br>
+          Must complete within 2 seconds of detection. Fire spreads exponentially — each second of delay is potentially significant structural damage. The Arduino Uno's single-threaded loop guarantees this deadline is met with no preemption risk.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Soft Real-Time</div>
+        <div class="card-desc" style="margin-top:8px;">
+          <strong>Telegram alert delivery.</strong><br><br>
+          Should arrive within 60 seconds. A delayed notification is unfortunate but doesn't directly affect physical safety. This task runs asynchronously in a FreeRTOS task with lower priority than sensor polling.
+        </div>
+      </div>
+    </div>
+
+    <h3>FreeRTOS Dual-Core Division of Labour</h3>
+
+    <p>The ESP32's two cores are explicitly assigned different priorities. Core 1 runs the main loop — sensor reading, threat analysis, Li-Fi transmission. Core 0 runs the Telegram task — network connection, JSON formatting, HTTPS requests. This physical separation means a slow or blocking Telegram API response cannot delay sensor polling. The two responsibilities literally cannot interfere with each other because they run on different hardware cores.</p>
+
+    <p>This is what the v4.0.4 Telegram queue fix was enabling: by buffering messages in a queue and processing them asynchronously on Core 0, the sensor loop on Core 1 is never blocked waiting for network I/O.</p>
+
+    <h3>Priority Inversion Avoidance</h3>
+
+    <p>Priority inversion is a subtle real-time bug where a low-priority task holds a resource that a high-priority task needs, causing the high-priority task to effectively run at low priority. ARIA avoids this by design: the Telegram task doesn't share any mutex or resource with the sensor loop. They communicate only through a fire-and-forget queue (the Telegram message queue), which uses atomic pointer operations — no mutex required, no inversion possible.</p>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 14: DESIGN PATTERNS                                -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section id="patterns">
+    <div class="section-number">14</div>
+    <h2>Design Patterns — Intuitive Explanations</h2>
+
+    <p>Software engineers use "design patterns" as named solutions to recurring problems. ARIA implements several classic patterns, applied to embedded safety systems in ways worth understanding on their own terms.</p>
+
+    <h4>The Producer-Consumer Pattern</h4>
+
+    <p>The Telegram queue is a textbook producer-consumer implementation. The sensor loop (producer) generates alert messages and puts them into a bounded queue. The Telegram task (consumer) takes messages out and sends them. The queue acts as a <em>buffer</em> — if the producer generates alerts faster than the consumer can send them, messages wait in the queue rather than being lost or blocking the producer.</p>
+
+    <p>The key insight of v4.0.4 was that this pattern requires careful ownership semantics. When you "put a message in a queue," you're handing ownership of that memory to the consumer. Using plain pointers (C-strings allocated with strdup) makes ownership explicit and unambiguous — something C++ String objects obscure behind their destructor semantics.</p>
+
+    <h4>The State Machine Pattern</h4>
+
+    <p>Both units extensively use state machines. A state machine is a formal description of behaviour: the system is always in exactly one state, and can transition to other states only in response to defined events. This makes behaviour predictable and verifiable — no "undefined" states, no unexpected transitions.</p>
+
+    <p>The Li-Fi decoder's four states (WAIT_START → WAIT_DATA → READ_BITS → PROCESS) form a tight state machine where each state has a clear entry condition, a clear exit condition, and a timeout guard. Without the timeout guard, an incomplete frame could leave the state machine stuck in READ_BITS forever — a bug that would only manifest as "receiver stopped responding" with no visible error.</p>
+
+    <h4>The Watchdog Pattern</h4>
+
+    <p>Multiple watchdogs operate in ARIA at different timescales. The Li-Fi link watchdog operates at 15-second granularity. The safety watchdog operates at 10-second granularity. The Telegram heartbeat operates at 5-minute granularity. Each provides a different tier of assurance: is the physical link alive? Is the relay state consistent? Is the system still running and connected?</p>
+
+    <div class="analogy">
+      <div class="analogy-icon">⏰</div>
+      <div class="analogy-text"><strong>Watchdogs are like a check-in system for a solo hiker.</strong> You tell someone: "If you don't hear from me every hour, assume I'm in trouble and send help." The value isn't in the normal check-ins — it's in what happens when check-ins stop. ARIA's watchdogs embody the same logic: silence implies failure, and failure demands a safe response.</div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 15: PRODUCTION GRADE                               -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section id="production">
+    <div class="section-number">15</div>
+    <h2>What Makes This "Production-Grade"?</h2>
+
+    <p>Many projects work when everything goes well. Production-grade systems work when things go badly. The gap between the two is where most of ARIA's engineering effort was spent.</p>
+
+    <h3>Version History as Evidence</h3>
+
+    <p>ARIA's changelog isn't just a list of features — it's a map of discovered failure modes. v4.0.3 fixed Telegram HTTP errors. v4.0.4 fixed heap corruption from the FreeRTOS queue bug. v4.0.7 fixed the Li-Fi timing issue for specific bit patterns. Each version represents a discovered edge case that a naive implementation would simply ignore or label as "occasional instability."</p>
+
+    <h3>Memory Management Discipline</h3>
+
+    <p>The v4.0.4 fix demonstrates understanding of memory ownership — a concept that separates embedded programmers from systems engineers. The fix isn't just "use a different data type." It's a careful analysis of who owns each allocation, when it gets freed, and what happens if a free is missed or duplicated. ARIA adds explicit heap monitoring (logging free heap size every 30 seconds) to detect creeping memory leaks before they cause crashes.</p>
+
+    <h3>Graceful Degradation at Every Layer</h3>
+
+    <p>Production systems define and implement degraded-mode behaviour. ARIA's degraded modes are explicit and deliberate:</p>
+
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-label">Full System</div>
+        <div class="timeline-text">All four layers operational: on-site alerts + Li-Fi relay control + Telegram cloud notification + web dashboard.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-label">No Internet</div>
+        <div class="timeline-text">On-site alerts + Li-Fi relay control continue normally. Web dashboard offline, Telegram paused. Physical safety unaffected.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-label">Li-Fi Link Lost</div>
+        <div class="timeline-text">Receiver enters safe state (relay OFF). Transmitter continues on-site alerts + Telegram. Remote ventilation control lost; manual intervention required.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-label">ESP32 Crashed</div>
+        <div class="timeline-text">All ESP32 functions offline. On-site physical alerts (buzzer, LED) from before crash remain visible. Receiver times out safely. Manual inspection required.</div>
+      </div>
+    </div>
+
+    <h3>The 60-Second Telegram Cooldown</h3>
+
+    <p>A single threshold crossing can produce dozens of alerts in a minute as the sensor reading oscillates around the boundary. Without the cooldown, ARIA could send 60+ Telegram messages in one minute, exhausting the API rate limit, flooding the user's phone, and potentially causing the bot to be banned. The 60-second cooldown is an explicit acknowledgement that <em>the human receiving the alert is part of the system</em>, with their own cognitive bandwidth limits.</p>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 16: KEY INSIGHTS                                   -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section id="insights">
+    <div class="section-number">16</div>
+    <h2>Key Engineering Insights</h2>
+
+    <div class="final-section">
+      <p style="font-size:13px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:32px;font-family:'IBM Plex Mono',monospace;">Synthesized Principles</p>
+
+      <h3 style="border:none;padding:0;margin-bottom:20px;">1. Complexity is a liability in safety systems</h3>
+      <p>The more complex your safety actuator, the more ways it can fail. The Arduino Uno's simplicity isn't a limitation — it's the feature. Reserve complexity for the parts of the system where it adds value (intelligence, connectivity, analysis) and keep the life-safety action path as short and simple as possible.</p>
+
+      <h3 style="border:none;padding:0;margin:36px 0 20px;">2. Every measurement is a comparison — calibrate the reference</h3>
+      <p>A sensor reading without a reliable baseline is noise. ARIA's 3-minute calibration is not a delay — it is the process of establishing the ruler by which all future readings are measured. The quality of your baseline is the quality of your system.</p>
+
+      <h3 style="border:none;padding:0;margin:36px 0 20px;">3. Design for the failure, not the happy path</h3>
+      <p>Any code path can be reached. ARIA's engineers asked "what if the queue is full? what if strdup fails? what if the link goes silent? what if the relay is ON but shouldn't be?" and coded answers to each. This habit of systematically imagining failures — and coding their responses before they occur — is what separates professional engineering from functional prototyping.</p>
+
+      <h3 style="border:none;padding:0;margin:36px 0 20px;">4. Protocol design must match channel physics</h3>
+      <p>The v4.0.7 timing fix demonstrates that a protocol is only correct if it accounts for the actual physical behaviour of its channel. The channel physics (no gap between start pulse and first bit) invalidated a protocol assumption (falling edge marks transition). The fix required going back to first principles and deriving the timing from what is physically guaranteed — the rising edge — rather than what was assumed.</p>
+
+      <h3 style="border:none;padding:0;margin:36px 0 20px;">5. User trust is a system component</h3>
+      <p>Alert fatigue — the phenomenon where users disable or ignore safety systems after too many false alarms — is a genuine failure mode. ARIA's environmental compensation, multi-sensor voting, and Telegram cooldown all exist to protect user trust. A system that generates one real alert per month and two false alarms is not 67% reliable — it is unreliable, because eventually the user will stop checking alerts. Reducing false positives from 40% to under 2% is the difference between a trusted safety system and an ignored noise-maker.</p>
+
+      <hr class="sep" style="margin:40px 0;">
+
+      <div class="insight">
+        <p>The goal of ARIA is not to demonstrate that we can connect sensors to a microcontroller. It is to demonstrate that we understand <em>why</em> systems fail, <em>how</em> those failures propagate, and <em>what design choices</em> prevent or contain them. That understanding — applied with discipline across every layer from sensor physics to memory management to protocol timing — is what makes an embedded system worthy of trust in a safety-critical role.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  // Active nav link on scroll
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('nav a');
+
+  function updateNav() {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 80) {
+        current = s.getAttribute('id');
+      }
+    });
+    navLinks.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  }
+
+  window.addEventListener('scroll', updateNav, { passive: true });
+  updateNav();
+</script>
+</body>
+</html>
